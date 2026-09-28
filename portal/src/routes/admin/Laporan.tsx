@@ -5,31 +5,50 @@ import { Card, EmptyState, StatCard } from "../../components/Card";
 
 type MonthIncome = { label: string; total: number };
 type Tunggakan = { invoice_number: string; due_date: string; outstanding: number; tenant_name: string };
+type Reconciliation = { id: string; our_status: string; midtrans_status: string; detected_at: string; payment_number: string };
 
-function csvField(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
-}
-
-function toCsv(rows: Tunggakan[]): string {
-  const header = "No Invoice,Penghuni,Jatuh Tempo,Tunggakan\n";
-  const body = rows.map((r) => `${csvField(r.invoice_number)},${csvField(r.tenant_name)},${r.due_date},${r.outstanding}`).join("\n");
-  return header + body;
-}
-
-function downloadCsv(filename: string, content: string) {
-  const blob = new Blob(["﻿" + content], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+// Lazy-load xlsx (lumayan berat) biar nggak ikut kebawa ke bundle halaman penghuni
+// yang nggak pernah butuh fitur ekspor ini sama sekali.
+async function downloadXlsx(filename: string, rows: Tunggakan[]) {
+  const XLSX = await import("xlsx");
+  const sheetRows = rows.map((r) => ({
+    "No Invoice": r.invoice_number,
+    Penghuni: r.tenant_name,
+    "Jatuh Tempo": r.due_date,
+    Tunggakan: r.outstanding,
+  }));
+  const sheet = XLSX.utils.json_to_sheet(sheetRows);
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "Tunggakan");
+  XLSX.writeFile(book, filename);
 }
 
 export default function Laporan() {
   const [monthlyIncome, setMonthlyIncome] = useState<MonthIncome[] | null>(null);
   const [tunggakan, setTunggakan] = useState<Tunggakan[] | null>(null);
   const [occupancy, setOccupancy] = useState<{ occupied: number; total: number } | null>(null);
+  const [reconciliations, setReconciliations] = useState<Reconciliation[] | null>(null);
+
+  async function loadReconciliations() {
+    const { data } = await supabase
+      .from("payment_reconciliations")
+      .select("id, our_status, midtrans_status, detected_at, payment:payments(payment_number)")
+      .order("detected_at", { ascending: false });
+    setReconciliations(
+      (data ?? []).map((r) => ({
+        id: r.id,
+        our_status: r.our_status,
+        midtrans_status: r.midtrans_status,
+        detected_at: r.detected_at,
+        payment_number: (r.payment as unknown as { payment_number: string } | null)?.payment_number ?? "-",
+      }))
+    );
+  }
+
+  async function handleDismissReconciliation(id: string) {
+    await supabase.from("payment_reconciliations").delete().eq("id", id);
+    setReconciliations((prev) => (prev ?? []).filter((r) => r.id !== id));
+  }
 
   useEffect(() => {
     async function load() {
@@ -80,6 +99,7 @@ export default function Laporan() {
       setOccupancy({ occupied: occupiedRooms, total: totalRooms });
     }
     load();
+    loadReconciliations();
   }, []);
 
   const maxIncome = Math.max(1, ...(monthlyIncome ?? []).map((m) => m.total));
@@ -122,8 +142,8 @@ export default function Laporan() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h3 style={{ fontSize: ".95rem" }}>Daftar Tunggakan</h3>
           {tunggakan && tunggakan.length > 0 && (
-            <button className="btn-link" onClick={() => downloadCsv("tunggakan.csv", toCsv(tunggakan))}>
-              📥 Ekspor Excel (CSV)
+            <button className="btn-link" onClick={() => downloadXlsx("tunggakan.xlsx", tunggakan)}>
+              📥 Ekspor Excel (.xlsx)
             </button>
           )}
         </div>
@@ -139,6 +159,38 @@ export default function Laporan() {
                   {t.tenant_name} — {t.invoice_number}
                 </span>
                 <span style={{ fontWeight: 700, color: "var(--danger)" }}>{formatRupiah(t.outstanding)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card style={{ marginTop: 24 }}>
+        <h3 style={{ fontSize: ".95rem", marginBottom: 6 }}>Rekonsiliasi Midtrans</h3>
+        <p style={{ fontSize: ".78rem", color: "var(--muted)", marginBottom: 16 }}>
+          Selisih antara status pembayaran di sistem kita vs status asli di Midtrans, dicek otomatis tiap hari. Biasanya artinya notifikasi
+          webhook gagal masuk — cek manual transaksinya di dashboard Midtrans sebelum diperbaiki.
+        </p>
+        {reconciliations === null ? (
+          <div className="spinner" style={{ borderTopColor: "var(--accent)", borderColor: "var(--border)" }} />
+        ) : reconciliations.length === 0 ? (
+          <EmptyState icon="✅" text="Nggak ada selisih. Semua status pembayaran gateway cocok." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {reconciliations.map((r) => (
+              <div
+                key={r.id}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: ".85rem", padding: "8px 0", borderBottom: "1px solid var(--border)" }}
+              >
+                <div>
+                  <div style={{ fontWeight: 700 }}>{r.payment_number}</div>
+                  <div style={{ fontSize: ".78rem", color: "var(--muted)" }}>
+                    Sistem kita: <strong>{r.our_status}</strong> · Midtrans: <strong>{r.midtrans_status}</strong>
+                  </div>
+                </div>
+                <button className="btn-link" onClick={() => handleDismissReconciliation(r.id)}>
+                  Tandai Sudah Dicek
+                </button>
               </div>
             ))}
           </div>

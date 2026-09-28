@@ -10,7 +10,7 @@ Status pembangunan:
 - ✅ **Modul 2 — Dashboard Penghuni** (info kamar, ringkasan tagihan/deposit/voucher, pengingat jatuh tempo H-7/H-3/H-1/H-0, komplain, profil read-only — ubah data lewat komplain kategori "Ubah Data Diri", dokumen)
 - ✅ **Modul 3 — Tagihan** (generate tagihan bulanan otomatis dengan prorata, denda keterlambatan otomatis, halaman rincian tagihan, bayar di muka dengan diskon bertingkat — jenjang diatur admin di Pengaturan)
 - ✅ **Modul 4 — Pembayaran** (manual multi-rekening — bank/QRIS statis/e-wallet, sekaligus otomatis via Midtrans, kombinasi deposit+voucher, link bayar tanpa login, invoice PDF otomatis)
-- ✅ **Modul 5 — Panel Admin** (`/admin`) — verifikasi transfer manual (+ batalkan pembayaran yang salah verifikasi, efeknya otomatis dibalik lewat ledger), kelola rekening pembayaran, kamar/tipe kamar/penghuni/kontrak (+ akhiri kontrak/checkout dengan hitung refund deposit otomatis, + kelola co-tenant/split payment kamar berdua), voucher/denda/pengaturan pembayaran, laporan (pemasukan, tunggakan, hunian, ekspor CSV), audit log, balas komplain
+- ✅ **Modul 5 — Panel Admin** (`/admin`) — verifikasi transfer manual (+ batalkan pembayaran yang salah verifikasi, efeknya otomatis dibalik lewat ledger), kelola rekening pembayaran, kamar/tipe kamar/penghuni/kontrak (+ akhiri kontrak/checkout dengan hitung refund deposit otomatis, + kelola co-tenant/split payment kamar berdua), voucher/denda/pengaturan pembayaran (biaya admin per channel Midtrans), laporan (pemasukan, tunggakan, hunian, rekonsiliasi Midtrans, ekspor Excel `.xlsx`), audit log, balas komplain, login dikunci sementara setelah 5x gagal beruntun
 
 **Semua 5 modul dari brief awal sudah selesai dibangun.** Yang masih jadi keterbatasan (lihat "Catatan Keterbatasan" di paling bawah): split payment kamar berdua belum ada (butuh keputusan desain tambahan), dan seluruh sistem belum pernah dites jalan nyata karena komputer ini tidak ada Node.js/Deno terinstall.
 
@@ -42,7 +42,10 @@ Status pembangunan:
    supabase functions deploy verify-invite
    supabase functions deploy verify-otp-activate
    supabase functions deploy resolve-identifier
+   supabase functions deploy login --no-verify-jwt
    ```
+   `login` (bukan `signInWithPassword` langsung dari klien) yang ngunci akun sementara
+   15 menit setelah 5x gagal login beruntun — datanya di tabel `login_attempts`.
 5. Set secrets buat Edge Functions (bukan lewat `.env`, tapi lewat Supabase CLI — supaya nggak pernah kebocor ke frontend):
    ```bash
    supabase secrets set FONNTE_TOKEN=isi_token_fonnte_lo
@@ -89,7 +92,7 @@ Status pembangunan:
    ```sql
    select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/expire-stale-payments', 'expire_payments_function_url');
    ```
-9. Setup pembayaran **manual** (selalu aktif, gratis) — bisa lebih dari satu rekening (bank, QRIS gambar statis, e-wallet, kripto). Kelola lewat popup **Admin → Pengaturan → Kelola Rekening** di portal setelah akun admin dibuat (langkah 12): tambah, ubah, aktif/nonaktifkan, urutkan, hapus. Minimal 1 rekening harus aktif sebelum penghuni bisa pakai jalur transfer manual. Migrasi [`20250112000000_payment_accounts.sql`](supabase/migrations/20250112000000_payment_accounts.sql) otomatis mindahin rekening lama (kalau sudah pernah diisi lewat setting `bank_transfer_info`) jadi baris pertama.
+9. Setup pembayaran **manual** (selalu aktif, gratis) — bisa lebih dari satu rekening (bank, QRIS gambar statis, e-wallet, kripto). Kelola lewat popup **Admin → Pengaturan → Kelola Rekening** di portal setelah akun admin dibuat (langkah 13): tambah, ubah, aktif/nonaktifkan, urutkan, hapus. Minimal 1 rekening harus aktif sebelum penghuni bisa pakai jalur transfer manual. Migrasi [`20250112000000_payment_accounts.sql`](supabase/migrations/20250112000000_payment_accounts.sql) otomatis mindahin rekening lama (kalau sudah pernah diisi lewat setting `bank_transfer_info`) jadi baris pertama.
    - (Opsional) Kalau mau QRIS **dinamis** yang otomatis nampilin nominal + kode unik (beda dari QRIS gambar statis di atas — ini generate ulang tiap transaksi), set nomor akun QRIS sebagai secret (JANGAN taruh di kode/migrasi):
      ```bash
      supabase secrets set QRIS_MERCHANT_ACCOUNT=nomor_akun_qris_kost
@@ -109,13 +112,24 @@ Status pembangunan:
       ```sql
       update public.settings set value = 'true' where key = 'payment_gateway_enabled';
       ```
-11. (Opsional) Kirim invoice PDF juga lewat email, selain WhatsApp — daftar gratis di [resend.com](https://resend.com):
+    - Biaya admin jalur otomatis diatur **per channel** (VA BCA, VA BNI, GoPay, QRIS, Indomaret, dst — bukan 1 angka rata), lewat **Admin → Pengaturan → Biaya Admin**. Penghuni milih channel spesifik di halaman Bayar sebelum checkout, biar biayanya kelihatan di muka dan Snap cuma nampilin channel itu aja (`enabled_payments`).
+    - ⚠️ **Channel yang bisa dipilih penghuni cuma yang beneran AKTIF di akun Midtrans-nya** (cek Settings → Payment Methods di dashboard Midtrans). Kalau suatu channel belum diaktifkan di sana, Snap bakal nolak nampilin apa-apa ("No payment channels available") walau kodenya udah bener — ini kejadian nyata pas tes Sandbox, khusus QRIS-nya kadang perlu pengaktifan manual tambahan tergantung provisioning akunnya.
+11. Setup rekonsiliasi otomatis Midtrans (opsional, tapi disarankan kalau jalur otomatis aktif) — cek harian status pembayaran gateway kita vs status asli di Midtrans, buat nangkep kasus webhook yang gagal masuk:
+    ```bash
+    supabase functions deploy reconcile-payments --no-verify-jwt
+    ```
+    Tambahkan secret Vault (pakai `reminder_cron_secret` yang sama seperti job lain):
+    ```sql
+    select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/reconcile-payments', 'reconcile_payments_function_url');
+    ```
+    Hasilnya (kalau ada selisih) muncul di **Admin → Laporan → Rekonsiliasi Midtrans**. Sengaja cuma lapor, nggak auto-perbaiki status pembayaran.
+12. (Opsional) Kirim invoice PDF juga lewat email, selain WhatsApp — daftar gratis di [resend.com](https://resend.com):
     ```bash
     supabase secrets set RESEND_API_KEY=isi_api_key_resend
     supabase secrets set RESEND_FROM_EMAIL="Genzed Kost <noreply@domainlo.com>"
     ```
     Kalau nggak di-set, email dilewati otomatis (WhatsApp tetap terkirim seperti biasa).
-12. Buat akun admin pertama secara manual (karena penghuni cuma bisa dibuat oleh admin, jadi admin pertama harus dibuat lewat dashboard):
+13. Buat akun admin pertama secara manual (karena penghuni cuma bisa dibuat oleh admin, jadi admin pertama harus dibuat lewat dashboard):
     - Di Supabase dashboard → **Authentication → Users → Add user**, buat 1 user pakai email lo.
     - Di **Table Editor → profiles**, insert 1 row manual: `id` = ID user yang baru dibuat, `role` = `admin`, isi `full_name`, `email`, `phone`.
 
@@ -184,6 +198,5 @@ Sudah dijelaskan di langkah 10 pada bagian **Setup Supabase** di atas — ringka
 ## Catatan Keterbatasan
 
 - **Belum pernah dites jalan nyata.** Seluruh sistem ini ditulis tanpa Node.js/Deno terinstall di komputer pengembangan, jadi belum ada `npm install`/`npm run build`/`npm run test`/`supabase functions serve` yang benar-benar dijalankan. Sebelum dipakai penghuni sungguhan: install Node.js, jalankan test (`cd portal && npm install && npm run test`), coba portal lokal, dan **WAJIB** uji Modul Pembayaran di Midtrans **Sandbox** dulu sebelum nyalakan `payment_gateway_enabled` di production.
-- **Split payment untuk kamar berdua** belum diimplementasikan — skema saat ini 1 kamar = 1 kontrak = 1 penghuni. Butuh keputusan desain (konsep "co-tenant") sebelum bisa dibangun dengan benar.
-- **Biaya admin gateway** disederhanakan jadi 1 angka rata (bukan per channel Midtrans spesifik seperti VA BCA vs GoPay vs Indomaret), karena tarif MDR asli itu urusan kontrak dengan Midtrans.
-- Admin pertama **harus** dibuat manual lewat Supabase dashboard (langkah 12) — nggak ada cara bikin admin dari dalam aplikasi, ini memang disengaja demi keamanan.
+- **Rekonsiliasi Midtrans** cuma jalan buat pembayaran 30 hari terakhir dan cuma MELAPORKAN selisih (nggak auto-perbaiki status/duit) — admin yang review manual lewat Laporan sebelum ambil tindakan.
+- Admin pertama **harus** dibuat manual lewat Supabase dashboard (langkah 13) — nggak ada cara bikin admin dari dalam aplikasi, ini memang disengaja demi keamanan.

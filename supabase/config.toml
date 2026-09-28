@@ -45,3 +45,7 @@ verify_jwt = false
 verify_jwt = false
 [functions.expire-stale-payments]
 verify_jwt = false
+[functions.login]
+verify_jwt = false
+[functions.reconcile-payments]
+verify_jwt = false

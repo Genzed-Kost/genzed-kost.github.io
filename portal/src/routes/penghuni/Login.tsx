@@ -36,14 +36,25 @@ export default function Login() {
 
     setLoading(true);
     try {
-      const email = await resolveEmail();
-      if (!email) {
-        setError("Akun tidak ditemukan. Pastikan email/No HP benar, atau hubungi admin kost.");
+      // Login dilewatkan lewat Edge Function (bukan signInWithPassword langsung) supaya
+      // percobaan gagal bisa dibatasi (kunci sementara setelah 5x gagal dalam 15 menit).
+      const res = await fetch(functionsUrl("login"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.access_token) {
+        setError(data.error ?? "Email/No HP atau password salah.");
         return;
       }
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInError || !signInData.user) {
-        setError("Email/No HP atau password salah.");
+
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+      if (sessionError || !sessionData.user) {
+        setError("Terjadi kesalahan. Coba lagi ya.");
         return;
       }
 
@@ -53,7 +64,7 @@ export default function Login() {
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
-        .eq("id", signInData.user.id)
+        .eq("id", sessionData.user.id)
         .single();
       navigate(profile?.role === "admin" ? "/admin" : "/penghuni/dashboard");
     } catch {

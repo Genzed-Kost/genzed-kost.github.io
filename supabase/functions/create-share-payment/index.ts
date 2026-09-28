@@ -8,6 +8,7 @@ import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { calculateAdminFee, generateUniqueCode, type FeeConfig } from "../_shared/payment.ts";
 import { createGatewayTransaction } from "../_shared/midtrans.ts";
 import { buildQrisPayload } from "../_shared/qris.ts";
+import { isGatewayChannelId } from "../_shared/paymentChannels.ts";
 
 type Method = "TRANSFER_MANUAL" | "QRIS_STATIS" | "GATEWAY";
 
@@ -29,12 +30,14 @@ Deno.serve(async (req) => {
       invoice_id,
       method,
       payment_account_id,
+      gateway_channel,
       want_public_link,
       idempotency_key,
     }: {
       invoice_id: string;
       method: Method;
       payment_account_id?: string;
+      gateway_channel?: string;
       want_public_link?: boolean;
       idempotency_key: string;
     } = body;
@@ -46,6 +49,9 @@ Deno.serve(async (req) => {
     }
     if (method === "TRANSFER_MANUAL" && !payment_account_id) {
       return jsonResponse({ error: "Pilih rekening tujuan transfer dulu." }, 400);
+    }
+    if (method === "GATEWAY" && !isGatewayChannelId(gateway_channel)) {
+      return jsonResponse({ error: "Pilih channel pembayaran otomatis dulu (VA/e-wallet/QRIS/retail)." }, 400);
     }
 
     const { data: existingPayment } = await admin.from("payments").select("*").eq("idempotency_key", idempotency_key).maybeSingle();
@@ -108,7 +114,8 @@ Deno.serve(async (req) => {
       if (gatewayEnabled?.value !== true) {
         return jsonResponse({ error: "Pembayaran otomatis lagi nggak aktif. Pakai transfer manual dulu ya." }, 503);
       }
-      adminFee = calculateAdminFee(outstanding, fees.gateway);
+      const channelFees = (fees.gateway_channels ?? {}) as Record<string, FeeConfig>;
+      adminFee = calculateAdminFee(outstanding, channelFees[gateway_channel!]);
       const grossCharge = outstanding + (borneBy === "tenant" ? adminFee : 0);
       const gateway = await createGatewayTransaction({
         orderId: paymentNumber,
@@ -118,6 +125,7 @@ Deno.serve(async (req) => {
         customerEmail: tenant.email,
         customerPhone: tenant.phone,
         expiryHours,
+        enabledPayments: [gateway_channel!],
       });
       extra = { redirect_url: gateway.redirectUrl, snap_token: gateway.token };
     }

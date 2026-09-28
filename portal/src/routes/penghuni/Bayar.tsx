@@ -4,11 +4,12 @@ import { useAuth } from "../../context/AuthContext";
 import { supabase, functionsUrl } from "../../lib/supabaseClient";
 import { loadMyInvoices } from "../../lib/invoices";
 import { formatRupiah } from "../../lib/format";
-import { checkAndCalculateVoucher } from "../../lib/payment";
+import { checkAndCalculateVoucher, type FeeConfig } from "../../lib/payment";
 import { Card, EmptyState } from "../../components/Card";
 import { QrisDisplay } from "../../components/QrisDisplay";
 import { Countdown } from "../../components/Countdown";
 import { PaymentAccountInfo } from "../../components/PaymentAccountInfo";
+import { GatewayChannelPicker } from "../../components/GatewayChannelPicker";
 import type { PaymentAccount } from "../../types/database";
 
 type OutstandingInvoice = { id: string; invoice_number: string; due_date: string; total: number; paid_total: number; isShared: boolean };
@@ -42,6 +43,9 @@ export default function Bayar() {
   const [method, setMethod] = useState<Method>("TRANSFER_MANUAL");
   const [accounts, setAccounts] = useState<PaymentAccount[] | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [gatewayChannel, setGatewayChannel] = useState<string | null>(null);
+  const [gatewayFees, setGatewayFees] = useState<Record<string, FeeConfig>>({});
+  const [tenantBearsFee, setTenantBearsFee] = useState(true);
   const [wantPublicLink, setWantPublicLink] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -115,6 +119,16 @@ export default function Bayar() {
         const tiers = ((data?.value ?? []) as DiscountTier[]).slice().sort((a, b) => a.months - b.months);
         setDiscountTiers(tiers);
         if (tiers.length > 0) setAdvanceMonths(tiers[0].months);
+      });
+    supabase
+      .from("settings")
+      .select("key, value")
+      .in("key", ["payment_method_fees", "admin_fee_borne_by"])
+      .then(({ data }) => {
+        const map = new Map((data ?? []).map((r) => [r.key, r.value]));
+        const fees = map.get("payment_method_fees") as { gateway_channels?: Record<string, FeeConfig> } | undefined;
+        setGatewayFees(fees?.gateway_channels ?? {});
+        setTenantBearsFee((map.get("admin_fee_borne_by") as string | undefined) !== "pemilik");
       });
   }, [profile]);
 
@@ -205,6 +219,10 @@ export default function Bayar() {
       setError("Pilih rekening tujuan transfer dulu.");
       return;
     }
+    if (method === "GATEWAY" && !gatewayChannel) {
+      setError("Pilih channel pembayaran otomatis dulu (VA/e-wallet/QRIS/retail).");
+      return;
+    }
     const isSharedPayment = selectedInvoices.some((i) => i.isShared);
     setSubmitting(true);
     try {
@@ -220,6 +238,7 @@ export default function Bayar() {
                 invoice_id: selectedInvoices[0].id,
                 method,
                 payment_account_id: method === "TRANSFER_MANUAL" ? selectedAccountId : undefined,
+                gateway_channel: method === "GATEWAY" ? gatewayChannel : undefined,
                 want_public_link: wantPublicLink,
                 idempotency_key: crypto.randomUUID(),
               }
@@ -230,6 +249,7 @@ export default function Bayar() {
                 voucher_code: voucherStatus?.valid ? voucherCode.trim() : undefined,
                 method,
                 payment_account_id: method === "TRANSFER_MANUAL" ? selectedAccountId : undefined,
+                gateway_channel: method === "GATEWAY" ? gatewayChannel : undefined,
                 want_public_link: wantPublicLink,
                 idempotency_key: crypto.randomUUID(),
               }
@@ -272,6 +292,10 @@ export default function Bayar() {
       setError("Pilih rekening tujuan transfer dulu.");
       return;
     }
+    if (method === "GATEWAY" && !gatewayChannel) {
+      setError("Pilih channel pembayaran otomatis dulu (VA/e-wallet/QRIS/retail).");
+      return;
+    }
     setAdvanceSubmitting(true);
     try {
       const {
@@ -285,6 +309,7 @@ export default function Bayar() {
           months_count: selectedTier.months,
           method,
           payment_account_id: method === "TRANSFER_MANUAL" ? selectedAccountId : undefined,
+          gateway_channel: method === "GATEWAY" ? gatewayChannel : undefined,
           want_public_link: wantPublicLink,
           idempotency_key: crypto.randomUUID(),
         }),
@@ -499,6 +524,15 @@ export default function Bayar() {
                 )}
               </div>
             )}
+            {method === "GATEWAY" && (
+              <GatewayChannelPicker
+                fees={gatewayFees}
+                baseAmount={advanceTotal}
+                tenantBearsFee={tenantBearsFee}
+                selected={gatewayChannel}
+                onSelect={setGatewayChannel}
+              />
+            )}
           </Card>
 
           <Card style={{ marginBottom: 20 }}>
@@ -649,6 +683,15 @@ export default function Bayar() {
                   ))
                 )}
               </div>
+            )}
+            {method === "GATEWAY" && (
+              <GatewayChannelPicker
+                fees={gatewayFees}
+                baseAmount={amountToPay}
+                tenantBearsFee={tenantBearsFee}
+                selected={gatewayChannel}
+                onSelect={setGatewayChannel}
+              />
             )}
             <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, cursor: "pointer" }}>
               <input type="checkbox" checked={wantPublicLink} onChange={(e) => setWantPublicLink(e.target.checked)} />

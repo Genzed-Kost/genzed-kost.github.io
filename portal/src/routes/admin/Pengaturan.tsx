@@ -5,6 +5,10 @@ import { Modal } from "../../components/Modal";
 import Rekening from "./Rekening";
 import Denda from "./Denda";
 import AdvanceDiscounts from "./AdvanceDiscounts";
+import { GATEWAY_CHANNELS } from "../../lib/paymentChannels";
+import type { FeeConfig } from "../../lib/payment";
+
+type ChannelFee = FeeConfig & { label: string };
 
 export default function Pengaturan() {
   const [loaded, setLoaded] = useState(false);
@@ -16,7 +20,9 @@ export default function Pengaturan() {
   const [gatewayEnabled, setGatewayEnabled] = useState(false);
   const [adminFeeBorneBy, setAdminFeeBorneBy] = useState<"tenant" | "pemilik">("tenant");
   const [minPartialPayment, setMinPartialPayment] = useState("50000");
-  const [gatewayFeePercent, setGatewayFeePercent] = useState("2");
+  const [channelFees, setChannelFees] = useState<Record<string, ChannelFee>>(
+    Object.fromEntries(GATEWAY_CHANNELS.map((c) => [c.id, { type: "nominal", value: 0, label: c.label }]))
+  );
 
   useEffect(() => {
     async function load() {
@@ -28,8 +34,15 @@ export default function Pengaturan() {
       setGatewayEnabled(map.get("payment_gateway_enabled") === true);
       setAdminFeeBorneBy((map.get("admin_fee_borne_by") as "tenant" | "pemilik") ?? "tenant");
       setMinPartialPayment(String(map.get("min_partial_payment") ?? 50000));
-      const fees = map.get("payment_method_fees") as { gateway?: { value: number } } | undefined;
-      setGatewayFeePercent(String(fees?.gateway?.value ?? 2));
+      const fees = map.get("payment_method_fees") as { gateway_channels?: Record<string, ChannelFee> } | undefined;
+      setChannelFees((prev) => {
+        const next = { ...prev };
+        for (const c of GATEWAY_CHANNELS) {
+          const saved = fees?.gateway_channels?.[c.id];
+          next[c.id] = saved ? { type: saved.type, value: saved.value, label: c.label } : { ...prev[c.id], label: c.label };
+        }
+        return next;
+      });
       setLoaded(true);
     }
     load();
@@ -46,7 +59,14 @@ export default function Pengaturan() {
         supabase.from("settings").update({ value: Number(minPartialPayment) }).eq("key", "min_partial_payment"),
         supabase
           .from("settings")
-          .update({ value: { manual: { type: "nominal", value: 0 }, gateway: { type: "percent", value: Number(gatewayFeePercent) } } })
+          .update({
+            value: {
+              manual: { type: "nominal", value: 0 },
+              gateway_channels: Object.fromEntries(
+                Object.entries(channelFees).map(([id, f]) => [id, { type: f.type, value: Number(f.value), label: f.label }])
+              ),
+            },
+          })
           .eq("key", "payment_method_fees"),
       ];
       const results = await Promise.all(updates);
@@ -129,8 +149,37 @@ export default function Pengaturan() {
           </select>
         </div>
         <div className="field">
-          <label>Biaya Jalur Otomatis (% dari nominal)</label>
-          <input type="number" step="0.1" value={gatewayFeePercent} onChange={(e) => setGatewayFeePercent(e.target.value)} />
+          <label>Biaya per Channel Jalur Otomatis</label>
+          <p style={{ fontSize: ".78rem", color: "var(--muted)", marginBottom: 8 }}>
+            Beda channel Midtrans beda biaya asli — atur di sini biar ditagihkan sesuai, bukan disamaratakan.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {GATEWAY_CHANNELS.map((c) => {
+              const fee = channelFees[c.id];
+              return (
+                <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: ".82rem", width: 110, flexShrink: 0 }}>{c.label}</span>
+                  <select
+                    value={fee.type}
+                    onChange={(e) =>
+                      setChannelFees((prev) => ({ ...prev, [c.id]: { ...prev[c.id], type: e.target.value as "nominal" | "percent" } }))
+                    }
+                    style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--r)", padding: "8px 10px", color: "var(--text)" }}
+                  >
+                    <option value="nominal">Rp</option>
+                    <option value="percent">%</option>
+                  </select>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={fee.value}
+                    onChange={(e) => setChannelFees((prev) => ({ ...prev, [c.id]: { ...prev[c.id], value: Number(e.target.value) } }))}
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </Card>
 

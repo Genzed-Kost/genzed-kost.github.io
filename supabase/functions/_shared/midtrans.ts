@@ -21,6 +21,11 @@ export async function createGatewayTransaction(params: {
   customerEmail: string;
   customerPhone: string;
   expiryHours: number;
+  // Batasi Snap cuma nampilin channel ini aja (mis. ["bca_va"]) — dipakai supaya
+  // biaya admin per channel bisa dihitung DI MUKA (lihat paymentChannels.ts),
+  // karena tanpa ini penghuni bisa pilih channel apapun di dalam Snap dan kita baru
+  // tau channel-nya lewat webhook, telat buat nge-charge biaya yang sesuai.
+  enabledPayments?: string[];
 }): Promise<{ token: string; redirectUrl: string }> {
   const res = await fetch(`${midtransBaseUrl()}/snap/v1/transactions`, {
     method: "POST",
@@ -51,6 +56,9 @@ export async function createGatewayTransaction(params: {
         phone: params.customerPhone,
       },
       expiry: { unit: "hours", duration: params.expiryHours },
+      ...(params.enabledPayments && params.enabledPayments.length > 0
+        ? { enabled_payments: params.enabledPayments }
+        : {}),
     }),
   });
 
@@ -80,6 +88,19 @@ export async function verifyMidtransSignature(params: {
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
   return hex === params.signatureKey;
+}
+
+// Cek status transaksi asli di Midtrans (dipakai reconcile-payments buat bandingin
+// sama status di tabel payments kita — nangkep kasus webhook yang gagal/kelewat).
+export async function getTransactionStatus(orderId: string): Promise<{ transactionStatus: string; fraudStatus: string | null } | null> {
+  const res = await fetch(`${midtransBaseUrl()}/v2/${encodeURIComponent(orderId)}/status`, {
+    method: "GET",
+    headers: { Authorization: authHeader(), Accept: "application/json" },
+  });
+  if (res.status === 404) return null; // transaksi belum pernah dibuat di Midtrans
+  if (!res.ok) throw new Error(`Gagal cek status Midtrans (${res.status}): ${await res.text()}`);
+  const data = await res.json();
+  return { transactionStatus: data.transaction_status, fraudStatus: data.fraud_status ?? null };
 }
 
 // Map payment_type dari Midtrans ke enum payment_method kita.

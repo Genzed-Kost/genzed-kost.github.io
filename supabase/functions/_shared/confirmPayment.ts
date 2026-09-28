@@ -41,11 +41,35 @@ export async function confirmPayment(admin: SupabaseClient, paymentId: string): 
         .single();
       if (!invoice) continue;
 
-      const newPaidTotal = Number(invoice.paid_total) + Number(alloc.amount);
-      const newStatus = newPaidTotal >= Number(invoice.total) ? "LUNAS" : "SEBAGIAN_DIBAYAR";
+      // Invoice co-tenant (Prioritas 4) dibagi jadi invoice_shares per penghuni —
+      // yang bertambah itu PORSI penghuni ini, bukan langsung invoices.paid_total.
+      // Kontrak biasa (single tenant) nggak punya baris invoice_shares sama sekali,
+      // jadi jalur di bawah (else) yang lama tetap dipakai apa adanya.
+      const { data: share } = await admin
+        .from("invoice_shares")
+        .select("id, share_amount, paid_amount")
+        .eq("invoice_id", alloc.invoice_id)
+        .eq("tenant_id", payment.tenant_id)
+        .maybeSingle();
 
-      await admin.from("invoices").update({ paid_total: newPaidTotal, status: newStatus }).eq("id", invoice.id);
-      if (newStatus === "LUNAS") affectedInvoiceIds.push(invoice.id);
+      if (share) {
+        const newSharePaid = Math.min(Number(share.share_amount), Number(share.paid_amount) + Number(alloc.amount));
+        await admin.from("invoice_shares").update({ paid_amount: newSharePaid }).eq("id", share.id);
+
+        const { data: allShares } = await admin.from("invoice_shares").select("share_amount, paid_amount").eq("invoice_id", alloc.invoice_id);
+        const totalPaid = (allShares ?? []).reduce((sum, s) => sum + Number(s.paid_amount), 0);
+        const allSharesPaid = (allShares ?? []).every((s) => Number(s.paid_amount) >= Number(s.share_amount));
+        const newStatus = allSharesPaid ? "LUNAS" : "SEBAGIAN_DIBAYAR";
+
+        await admin.from("invoices").update({ paid_total: totalPaid, status: newStatus }).eq("id", invoice.id);
+        if (newStatus === "LUNAS") affectedInvoiceIds.push(invoice.id);
+      } else {
+        const newPaidTotal = Number(invoice.paid_total) + Number(alloc.amount);
+        const newStatus = newPaidTotal >= Number(invoice.total) ? "LUNAS" : "SEBAGIAN_DIBAYAR";
+
+        await admin.from("invoices").update({ paid_total: newPaidTotal, status: newStatus }).eq("id", invoice.id);
+        if (newStatus === "LUNAS") affectedInvoiceIds.push(invoice.id);
+      }
     } else {
       // invoice_id null = kelebihan bayar, dicatat sebagai deposit baru
       const { data: newDeposit } = await admin

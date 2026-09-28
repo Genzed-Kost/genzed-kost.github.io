@@ -2,7 +2,7 @@
 // tagihan yang sudah lewat jatuh tempo dan belum lunas, lalu update status jadi JATUH_TEMPO.
 import { getSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { jsonResponse } from "../_shared/cors.ts";
-import { calculatePenalty, type PenaltyCalcType } from "../_shared/billing.ts";
+import { calculatePenalty, splitBySharePercent, type PenaltyCalcType } from "../_shared/billing.ts";
 
 function jakartaToday(): Date {
   const s = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date());
@@ -74,6 +74,21 @@ Deno.serve(async (req) => {
           unit_price: penaltyAmount,
           amount: penaltyAmount,
         });
+      }
+
+      // Co-tenant (Prioritas 4): invoice yang dibagi ke beberapa penghuni juga
+      // perlu share_amount-nya disesuaikan ulang (total baru = sewa + denda),
+      // dipecah pakai share_percent ASLI yang tersimpan di tiap baris.
+      // paid_amount TIDAK disentuh — yang sudah dibayar tetap dianggap dibayar.
+      const { data: shares } = await admin.from("invoice_shares").select("id, tenant_id, share_percent").eq("invoice_id", inv.id);
+      if (shares && shares.length > 0) {
+        const newShareAmounts = splitBySharePercent(
+          newTotal,
+          shares.map((s) => ({ tenantId: s.tenant_id, sharePercent: Number(s.share_percent) }))
+        );
+        for (let i = 0; i < shares.length; i++) {
+          await admin.from("invoice_shares").update({ share_amount: newShareAmounts[i].amount }).eq("id", shares[i].id);
+        }
       }
 
       updatedCount += 1;

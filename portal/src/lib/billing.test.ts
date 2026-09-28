@@ -11,6 +11,7 @@ import {
   firstAnchoredPeriodEnd,
   formatInvoiceNumber,
   generateAdvancePeriods,
+  splitBySharePercent,
   inclusiveDayCount,
   invoicePublishDate,
   nextAnchoredPeriodEnd,
@@ -264,5 +265,40 @@ describe("distributeDiscount", () => {
   });
   it("array kosong -> hasil kosong", () => {
     expect(distributeDiscount([], 50000)).toEqual([]);
+  });
+});
+
+describe("splitBySharePercent", () => {
+  it("terbagi rata 50/50", () => {
+    const result = splitBySharePercent(1000000, [
+      { tenantId: "a", sharePercent: 50 },
+      { tenantId: "b", sharePercent: 50 },
+    ]);
+    expect(result).toEqual([
+      { tenantId: "a", amount: 500000 },
+      { tenantId: "b", amount: 500000 },
+    ]);
+  });
+  it("share nggak rata (60/40), sisa pembulatan masuk baris terakhir", () => {
+    const result = splitBySharePercent(1000001, [
+      { tenantId: "a", sharePercent: 60 },
+      { tenantId: "b", sharePercent: 40 },
+    ]);
+    expect(result[0].amount).toBe(600001); // round(1000001*0.6) = 600000.6 -> 600001
+    expect(result[0].amount + result[1].amount).toBe(1000001);
+  });
+  it("3 orang share nggak rata, jumlah tetap presisi", () => {
+    const result = splitBySharePercent(1000000, [
+      { tenantId: "a", sharePercent: 33.33 },
+      { tenantId: "b", sharePercent: 33.33 },
+      { tenantId: "c", sharePercent: 33.34 },
+    ]);
+    expect(result.reduce((s, r) => s + r.amount, 0)).toBe(1000000);
+  });
+  it("satu orang 100% -> dapat semuanya (kasus kontrak biasa kalau dipaksa lewat sini)", () => {
+    expect(splitBySharePercent(750000, [{ tenantId: "a", sharePercent: 100 }])).toEqual([{ tenantId: "a", amount: 750000 }]);
+  });
+  it("array kosong -> hasil kosong", () => {
+    expect(splitBySharePercent(500000, [])).toEqual([]);
   });
 });

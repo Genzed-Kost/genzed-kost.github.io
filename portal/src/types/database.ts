@@ -173,6 +173,12 @@ export type PaymentAccount = {
   sort_order: number;
 };
 
+export type MyInvoiceView = InvoiceDetail & {
+  isShared: boolean;
+  myShareAmount: number;
+  myPaidAmount: number;
+};
+
 export type NotificationRow = {
   id: string;
   category: string;

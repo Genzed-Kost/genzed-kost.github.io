@@ -20,6 +20,7 @@ import {
   formatInvoiceNumber,
   invoicePublishDate,
   nextAnchoredPeriodEnd,
+  splitBySharePercent,
   type BillingCycle,
 } from "../_shared/billing.ts";
 
@@ -161,6 +162,29 @@ Deno.serve(async (req) => {
         amount: sewa.amount,
       });
 
+      // Co-tenant (Prioritas 4): kalau kontrak ini punya >1 anggota, pecah
+      // tagihannya ke invoice_shares sesuai share_percent masing-masing.
+      // Kontrak satu-penghuni (mayoritas) nggak pernah sampai sini.
+      const { data: members } = await admin
+        .from("tenancy_members")
+        .select("tenant_id, share_percent")
+        .eq("tenancy_id", tenancy.id);
+      if (members && members.length > 1) {
+        const shares = splitBySharePercent(
+          sewa.amount,
+          members.map((m) => ({ tenantId: m.tenant_id, sharePercent: Number(m.share_percent) }))
+        );
+        await admin.from("invoice_shares").insert(
+          shares.map((s, i) => ({
+            invoice_id: invoice.id,
+            tenant_id: s.tenantId,
+            share_percent: Number(members[i].share_percent),
+            share_amount: s.amount,
+            paid_amount: 0,
+          }))
+        );
+      }
+
       await admin.from("audit_logs").insert({
         actor_id: null,
         action: "generate_invoice",
@@ -169,9 +193,33 @@ Deno.serve(async (req) => {
         metadata: { invoice_number: invoiceNumber, tenancy_id: tenancy.id, prorated: sewa.isProrated, anchor, is_first_invoice: isFirstInvoice },
       });
 
-      if (tenant) {
-        const rupiah = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(sewa.amount);
-        const body = `Tagihan baru ${invoiceNumber} sebesar ${rupiah} sudah terbit. Jatuh tempo ${dueDate}. Cek detail di portal ya.`;
+      const rupiahFmt = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
+
+      if (members && members.length > 1) {
+        // Co-tenant: tiap anggota dinotif porsinya masing-masing, bukan nominal sekamar penuh.
+        const { data: memberProfiles } = await admin.from("profiles").select("id, full_name, phone").in(
+          "id",
+          members.map((m) => m.tenant_id)
+        );
+        const { data: shareRows } = await admin.from("invoice_shares").select("tenant_id, share_amount").eq("invoice_id", invoice.id);
+        for (const m of memberProfiles ?? []) {
+          const shareAmount = Number((shareRows ?? []).find((s) => s.tenant_id === m.id)?.share_amount ?? 0);
+          const body = `Tagihan baru ${invoiceNumber} sudah terbit (kamar dibagi rame-rame). Porsi lo: ${rupiahFmt(shareAmount)}. Jatuh tempo ${dueDate}. Cek detail di portal ya.`;
+          await admin.from("notifications").insert({
+            tenant_id: m.id,
+            channel: "whatsapp",
+            category: "pembayaran",
+            title: `Tagihan baru: ${invoiceNumber}`,
+            body,
+          });
+          try {
+            await sendWhatsApp(m.phone, `Halo ${m.full_name}! 👋\n\n${body}`);
+          } catch {
+            // gagal kirim WA tidak menggagalkan pembuatan tagihan
+          }
+        }
+      } else if (tenant) {
+        const body = `Tagihan baru ${invoiceNumber} sebesar ${rupiahFmt(sewa.amount)} sudah terbit. Jatuh tempo ${dueDate}. Cek detail di portal ya.`;
         await admin.from("notifications").insert({
           tenant_id: tenancy.tenant_id,
           channel: "whatsapp",

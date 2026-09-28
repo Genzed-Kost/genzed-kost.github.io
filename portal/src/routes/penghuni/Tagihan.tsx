@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { supabase } from "../../lib/supabaseClient";
+import { loadMyInvoices } from "../../lib/invoices";
 import { formatRupiah, formatTanggalWIB } from "../../lib/format";
 import { Card, EmptyState } from "../../components/Card";
-import type { InvoiceDetail, InvoiceStatus } from "../../types/database";
+import type { MyInvoiceView, InvoiceStatus } from "../../types/database";
 
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
   DRAFT: "Draf",
@@ -38,7 +38,7 @@ const ITEM_TYPE_LABEL: Record<string, string> = {
 export default function Tagihan() {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [invoices, setInvoices] = useState<InvoiceDetail[] | null>(null);
+  const [invoices, setInvoices] = useState<MyInvoiceView[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -46,28 +46,14 @@ export default function Tagihan() {
     if (!profile) return;
     let mounted = true;
 
-    async function load() {
-      const { data, error: fetchErr } = await supabase
-        .from("invoices")
-        .select(
-          "id, invoice_number, period_start, period_end, due_date, status, subtotal, discount_total, penalty_total, total, paid_total, notes, invoice_items(id, item_type, description, quantity, unit_price, amount)"
-        )
-        .eq("tenant_id", profile!.id)
-        .order("due_date", { ascending: false });
+    loadMyInvoices(profile.id)
+      .then((list) => {
+        if (mounted) setInvoices(list);
+      })
+      .catch(() => {
+        if (mounted) setError("Gagal memuat daftar tagihan. Coba refresh halaman ya.");
+      });
 
-      if (!mounted) return;
-      if (fetchErr) {
-        setError("Gagal memuat daftar tagihan. Coba refresh halaman ya.");
-        return;
-      }
-      setInvoices(
-        ((data ?? []) as unknown as Array<InvoiceDetail & { invoice_items: InvoiceDetail["items"] }>).map(
-          ({ invoice_items, ...inv }) => ({ ...inv, items: invoice_items ?? [] })
-        )
-      );
-    }
-
-    load();
     return () => {
       mounted = false;
     };
@@ -97,7 +83,7 @@ export default function Tagihan() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {invoices.map((inv) => {
-            const sisa = Number(inv.total) - Number(inv.paid_total);
+            const sisa = Number(inv.myShareAmount) - Number(inv.myPaidAmount);
             const isExpanded = expandedId === inv.id;
             return (
               <Card key={inv.id}>
@@ -115,15 +101,18 @@ export default function Tagihan() {
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: ".92rem", marginBottom: 3 }}>{inv.invoice_number}</div>
+                      <div style={{ fontWeight: 700, fontSize: ".92rem", marginBottom: 3 }}>
+                        {inv.invoice_number} {inv.isShared && <span style={{ fontSize: ".72rem", color: "var(--muted)", fontWeight: 600 }}>· kamar dibagi</span>}
+                      </div>
                       <div style={{ fontSize: ".78rem", color: "var(--muted)" }}>
                         Periode {inv.period_start} s/d {inv.period_end} · Jatuh tempo {formatTanggalWIB(inv.due_date).split(",")[0]}
                       </div>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
                       <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.05rem" }}>
-                        {formatRupiah(sisa > 0 ? sisa : Number(inv.total))}
+                        {formatRupiah(sisa > 0 ? sisa : Number(inv.myShareAmount))}
                       </div>
+                      {inv.isShared && <div style={{ fontSize: ".72rem", color: "var(--muted)" }}>porsi lo</div>}
                       <div style={{ fontSize: ".78rem", fontWeight: 700, color: STATUS_COLOR[inv.status] }}>
                         {STATUS_LABEL[inv.status]}
                       </div>
@@ -159,13 +148,27 @@ export default function Tagihan() {
                         </div>
                       )}
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".9rem", fontWeight: 700, padding: "6px 0" }}>
-                        <span>Total Tagihan</span>
+                        <span>Total Tagihan (sekamar)</span>
                         <span>{formatRupiah(inv.total)}</span>
                       </div>
                       {inv.paid_total > 0 && (
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".85rem", padding: "3px 0", color: "var(--muted)" }}>
-                          <span>Sudah dibayar</span>
+                          <span>Sudah dibayar (sekamar)</span>
                           <span>-{formatRupiah(inv.paid_total)}</span>
+                        </div>
+                      )}
+                      {inv.isShared && (
+                        <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed var(--border)" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".9rem", fontWeight: 700, color: "var(--accent)" }}>
+                            <span>Porsi Lo</span>
+                            <span>{formatRupiah(inv.myShareAmount)}</span>
+                          </div>
+                          {inv.myPaidAmount > 0 && (
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".82rem", color: "var(--muted)", marginTop: 2 }}>
+                              <span>Porsi lo yang sudah dibayar</span>
+                              <span>-{formatRupiah(inv.myPaidAmount)}</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

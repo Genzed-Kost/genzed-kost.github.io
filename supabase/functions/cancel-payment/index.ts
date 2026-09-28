@@ -46,9 +46,31 @@ Deno.serve(async (req) => {
       if (!alloc.invoice_id) continue; // ditangani terpisah di bawah (kelebihan bayar -> deposit)
       const { data: invoice } = await admin.from("invoices").select("id, total, paid_total, due_date").eq("id", alloc.invoice_id).single();
       if (!invoice) continue;
-      const newPaidTotal = Math.max(0, Number(invoice.paid_total) - Number(alloc.amount));
-      const newStatus = newPaidTotal <= 0 ? (invoice.due_date < today ? "JATUH_TEMPO" : "TERBIT") : newPaidTotal >= Number(invoice.total) ? "LUNAS" : "SEBAGIAN_DIBAYAR";
-      await admin.from("invoices").update({ paid_total: newPaidTotal, status: newStatus }).eq("id", invoice.id);
+
+      // Invoice co-tenant (Prioritas 4): balikin ke invoice_shares milik penghuni
+      // yang bayar ini, bukan invoices.paid_total langsung — sama seperti logika
+      // di confirmPayment.ts. Kontrak biasa nggak punya invoice_shares sama sekali.
+      const { data: share } = await admin
+        .from("invoice_shares")
+        .select("id, share_amount, paid_amount")
+        .eq("invoice_id", alloc.invoice_id)
+        .eq("tenant_id", payment.tenant_id)
+        .maybeSingle();
+
+      if (share) {
+        const newSharePaid = Math.max(0, Number(share.paid_amount) - Number(alloc.amount));
+        await admin.from("invoice_shares").update({ paid_amount: newSharePaid }).eq("id", share.id);
+
+        const { data: allShares } = await admin.from("invoice_shares").select("share_amount, paid_amount").eq("invoice_id", alloc.invoice_id);
+        const totalPaid = (allShares ?? []).reduce((sum, s) => sum + Number(s.paid_amount), 0);
+        const allSharesPaid = (allShares ?? []).length > 0 && (allShares ?? []).every((s) => Number(s.paid_amount) >= Number(s.share_amount));
+        const newStatus = allSharesPaid ? "LUNAS" : totalPaid <= 0 ? (invoice.due_date < today ? "JATUH_TEMPO" : "TERBIT") : "SEBAGIAN_DIBAYAR";
+        await admin.from("invoices").update({ paid_total: totalPaid, status: newStatus }).eq("id", invoice.id);
+      } else {
+        const newPaidTotal = Math.max(0, Number(invoice.paid_total) - Number(alloc.amount));
+        const newStatus = newPaidTotal <= 0 ? (invoice.due_date < today ? "JATUH_TEMPO" : "TERBIT") : newPaidTotal >= Number(invoice.total) ? "LUNAS" : "SEBAGIAN_DIBAYAR";
+        await admin.from("invoices").update({ paid_total: newPaidTotal, status: newStatus }).eq("id", invoice.id);
+      }
       affectedInvoices.push(invoice.id);
     }
 

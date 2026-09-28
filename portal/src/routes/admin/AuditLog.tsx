@@ -21,6 +21,7 @@ const ACTION_LABEL: Record<string, string> = {
   end_tenancy: "Akhiri kontrak (checkout)",
   cancel_payment: "Batalkan pembayaran",
   create_advance_payment: "Bayar di muka",
+  create_share_payment: "Bayar porsi tagihan (co-tenant)",
 };
 
 export default function AuditLog() {

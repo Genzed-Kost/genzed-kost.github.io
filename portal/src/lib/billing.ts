@@ -236,3 +236,29 @@ export function distributeDiscount(perPeriodAmounts: number[], totalDiscount: nu
   }
   return result;
 }
+
+// ────────────────────────────────────────────────────────────
+// SPLIT PAYMENT CO-TENANT (Prioritas 4) — pecah nominal tagihan/denda ke
+// tiap anggota tenancy sesuai share_percent-nya. Sisa pembulatan sengaja
+// masuk ke baris TERAKHIR, sama kayak distributeDiscount, supaya jumlah
+// totalnya selalu presisi.
+// ────────────────────────────────────────────────────────────
+
+export type ShareInput = { tenantId: string; sharePercent: number };
+export type ShareResult = { tenantId: string; amount: number };
+
+export function splitBySharePercent(totalAmount: number, shares: ShareInput[]): ShareResult[] {
+  if (shares.length === 0) return [];
+  const result: ShareResult[] = [];
+  let allocated = 0;
+  for (let i = 0; i < shares.length; i++) {
+    if (i === shares.length - 1) {
+      result.push({ tenantId: shares[i].tenantId, amount: Math.round(totalAmount) - allocated });
+    } else {
+      const amount = Math.round((totalAmount * shares[i].sharePercent) / 100);
+      result.push({ tenantId: shares[i].tenantId, amount });
+      allocated += amount;
+    }
+  }
+  return result;
+}

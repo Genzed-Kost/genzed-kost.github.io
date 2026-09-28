@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { supabase, functionsUrl } from "../../lib/supabaseClient";
+import { loadMyInvoices } from "../../lib/invoices";
 import { formatRupiah } from "../../lib/format";
 import { checkAndCalculateVoucher } from "../../lib/payment";
 import { Card, EmptyState } from "../../components/Card";
@@ -10,7 +11,7 @@ import { Countdown } from "../../components/Countdown";
 import { PaymentAccountInfo } from "../../components/PaymentAccountInfo";
 import type { PaymentAccount } from "../../types/database";
 
-type OutstandingInvoice = { id: string; invoice_number: string; due_date: string; total: number; paid_total: number };
+type OutstandingInvoice = { id: string; invoice_number: string; due_date: string; total: number; paid_total: number; isShared: boolean };
 type Method = "TRANSFER_MANUAL" | "QRIS_STATIS" | "GATEWAY";
 type DiscountTier = { months: number; discount_percent: number };
 type ActiveTenancy = { id: string; billing_cycle: string; monthly_rate: number };
@@ -60,17 +61,15 @@ export default function Bayar() {
     let mounted = true;
 
     async function load() {
-      const [invRes, depRes] = await Promise.all([
-        supabase
-          .from("invoices")
-          .select("id, invoice_number, due_date, total, paid_total")
-          .eq("tenant_id", profile!.id)
-          .in("status", ["TERBIT", "SEBAGIAN_DIBAYAR", "JATUH_TEMPO"])
-          .order("due_date", { ascending: true }),
+      const [myInvoices, depRes] = await Promise.all([
+        loadMyInvoices(profile!.id),
         supabase.from("deposits").select("remaining_amount").eq("tenant_id", profile!.id),
       ]);
       if (!mounted) return;
-      const list = (invRes.data ?? []) as OutstandingInvoice[];
+      const list: OutstandingInvoice[] = myInvoices
+        .filter((inv) => ["TERBIT", "SEBAGIAN_DIBAYAR", "JATUH_TEMPO"].includes(inv.status) && Number(inv.myShareAmount) - Number(inv.myPaidAmount) > 0)
+        .sort((a, b) => a.due_date.localeCompare(b.due_date))
+        .map((inv) => ({ id: inv.id, invoice_number: inv.invoice_number, due_date: inv.due_date, total: inv.myShareAmount, paid_total: inv.myPaidAmount, isShared: inv.isShared }));
       setInvoices(list);
       setDepositBalance((depRes.data ?? []).reduce((sum, d) => sum + Number(d.remaining_amount), 0));
       if (preselectId && list.some((i) => i.id === preselectId)) {
@@ -120,6 +119,7 @@ export default function Bayar() {
   }, [profile]);
 
   const selectedInvoices = useMemo(() => (invoices ?? []).filter((i) => selected.has(i.id)), [invoices, selected]);
+  const isSharedSelected = selectedInvoices.some((i) => i.isShared);
   const totalOutstanding = useMemo(
     () => selectedInvoices.reduce((sum, i) => sum + (Number(i.total) - Number(i.paid_total)), 0),
     [selectedInvoices]
@@ -137,10 +137,25 @@ export default function Bayar() {
   const advanceTotal = advanceSubtotal - advanceDiscount;
 
   function toggleInvoice(id: string) {
+    const inv = (invoices ?? []).find((i) => i.id === id);
     setSelected((prev) => {
+      // Tagihan yang dibagi co-tenant cuma bisa dibayar satu-satu (porsi sendiri),
+      // nggak bisa digabung sama tagihan lain dalam satu pembayaran.
+      if (inv?.isShared) {
+        if (!prev.has(id)) {
+          setPartialMode(false);
+          setPartialAmountInput("");
+          setUseDeposit(false);
+        }
+        return prev.has(id) ? new Set() : new Set([id]);
+      }
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
+      // Kalau ada tagihan shared yang kepilih sebelumnya, lepas dulu — nggak boleh gabung.
+      for (const selId of Array.from(next)) {
+        if (selId !== id && (invoices ?? []).find((i) => i.id === selId)?.isShared) next.delete(selId);
+      }
       return next;
     });
     setVoucherStatus(null);
@@ -190,24 +205,35 @@ export default function Bayar() {
       setError("Pilih rekening tujuan transfer dulu.");
       return;
     }
+    const isSharedPayment = selectedInvoices.some((i) => i.isShared);
     setSubmitting(true);
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      const res = await fetch(functionsUrl("create-payment"), {
+      const res = await fetch(functionsUrl(isSharedPayment ? "create-share-payment" : "create-payment"), {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({
-          invoice_ids: selectedInvoices.map((i) => i.id),
-          partial_amount: partialMode && parsedPartial > 0 ? parsedPartial : undefined,
-          use_deposit_amount: useDeposit ? depositBalance : 0,
-          voucher_code: voucherStatus?.valid ? voucherCode.trim() : undefined,
-          method,
-          payment_account_id: method === "TRANSFER_MANUAL" ? selectedAccountId : undefined,
-          want_public_link: wantPublicLink,
-          idempotency_key: crypto.randomUUID(),
-        }),
+        body: JSON.stringify(
+          isSharedPayment
+            ? {
+                invoice_id: selectedInvoices[0].id,
+                method,
+                payment_account_id: method === "TRANSFER_MANUAL" ? selectedAccountId : undefined,
+                want_public_link: wantPublicLink,
+                idempotency_key: crypto.randomUUID(),
+              }
+            : {
+                invoice_ids: selectedInvoices.map((i) => i.id),
+                partial_amount: partialMode && parsedPartial > 0 ? parsedPartial : undefined,
+                use_deposit_amount: useDeposit ? depositBalance : 0,
+                voucher_code: voucherStatus?.valid ? voucherCode.trim() : undefined,
+                method,
+                payment_account_id: method === "TRANSFER_MANUAL" ? selectedAccountId : undefined,
+                want_public_link: wantPublicLink,
+                idempotency_key: crypto.randomUUID(),
+              }
+        ),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -510,7 +536,9 @@ export default function Bayar() {
                 <label key={inv.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", cursor: "pointer" }}>
                   <input type="checkbox" checked={selected.has(inv.id)} onChange={() => toggleInvoice(inv.id)} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: ".85rem", fontWeight: 600 }}>{inv.invoice_number}</div>
+                    <div style={{ fontSize: ".85rem", fontWeight: 600 }}>
+                      {inv.invoice_number} {inv.isShared && <span style={{ fontSize: ".72rem", color: "var(--muted)", fontWeight: 600 }}>· porsi lo</span>}
+                    </div>
                     <div style={{ fontSize: ".75rem", color: "var(--muted)" }}>Jatuh tempo {inv.due_date}</div>
                   </div>
                   <div style={{ fontSize: ".85rem", fontWeight: 700 }}>{formatRupiah(outstanding)}</div>
@@ -519,60 +547,70 @@ export default function Bayar() {
             })}
           </Card>
 
-          <Card style={{ marginBottom: 16 }}>
-            <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>2. Nominal Bayar</h3>
-            <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: partialMode ? 12 : 0, cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={partialMode}
-                onChange={(e) => {
-                  setPartialMode(e.target.checked);
-                  setVoucherStatus(null);
-                }}
-              />
-              <span style={{ fontSize: ".85rem" }}>Bayar sebagian dulu (sisanya tetap tercatat)</span>
-            </label>
-            {partialMode && (
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder={`Nominal, mis. ${Math.round(totalOutstanding / 2)}`}
-                value={partialAmountInput}
-                onChange={(e) => {
-                  setPartialAmountInput(e.target.value.replace(/\D/g, ""));
-                  setVoucherStatus(null);
-                }}
-              />
-            )}
-          </Card>
-
-          <Card style={{ marginBottom: 16 }}>
-            <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>3. Sumber Dana</h3>
-            {depositBalance > 0 && (
-              <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, cursor: "pointer" }}>
-                <input type="checkbox" checked={useDeposit} onChange={(e) => setUseDeposit(e.target.checked)} />
-                <span style={{ fontSize: ".85rem" }}>Pakai saldo deposit ({formatRupiah(depositBalance)} tersedia)</span>
-              </label>
-            )}
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                placeholder="Kode voucher (opsional)"
-                value={voucherCode}
-                onChange={(e) => {
-                  setVoucherCode(e.target.value);
-                  setVoucherStatus(null);
-                }}
-              />
-              <button className="btn btn-primary" style={{ width: "auto" }} onClick={handleCheckVoucher} disabled={checkingVoucher}>
-                {checkingVoucher ? <span className="spinner" /> : "Cek"}
-              </button>
+          {isSharedSelected && (
+            <div className="alert alert-error" style={{ marginBottom: 16, background: "var(--surface2)", color: "var(--muted)" }}>
+              Tagihan ini dibagi co-tenant — lo cuma bayar porsi lo sendiri, langsung penuh (nggak bisa sebagian/pakai deposit/voucher).
             </div>
-            {voucherStatus && (
-              <p style={{ fontSize: ".8rem", marginTop: 8, color: voucherStatus.valid ? "var(--accent)" : "var(--danger)" }}>
-                {voucherStatus.valid ? `Voucher valid! Potongan ${formatRupiah(voucherStatus.discount ?? 0)}` : voucherStatus.reason}
-              </p>
-            )}
-          </Card>
+          )}
+
+          {!isSharedSelected && (
+            <>
+              <Card style={{ marginBottom: 16 }}>
+                <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>2. Nominal Bayar</h3>
+                <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: partialMode ? 12 : 0, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={partialMode}
+                    onChange={(e) => {
+                      setPartialMode(e.target.checked);
+                      setVoucherStatus(null);
+                    }}
+                  />
+                  <span style={{ fontSize: ".85rem" }}>Bayar sebagian dulu (sisanya tetap tercatat)</span>
+                </label>
+                {partialMode && (
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={`Nominal, mis. ${Math.round(totalOutstanding / 2)}`}
+                    value={partialAmountInput}
+                    onChange={(e) => {
+                      setPartialAmountInput(e.target.value.replace(/\D/g, ""));
+                      setVoucherStatus(null);
+                    }}
+                  />
+                )}
+              </Card>
+
+              <Card style={{ marginBottom: 16 }}>
+                <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>3. Sumber Dana</h3>
+                {depositBalance > 0 && (
+                  <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, cursor: "pointer" }}>
+                    <input type="checkbox" checked={useDeposit} onChange={(e) => setUseDeposit(e.target.checked)} />
+                    <span style={{ fontSize: ".85rem" }}>Pakai saldo deposit ({formatRupiah(depositBalance)} tersedia)</span>
+                  </label>
+                )}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    placeholder="Kode voucher (opsional)"
+                    value={voucherCode}
+                    onChange={(e) => {
+                      setVoucherCode(e.target.value);
+                      setVoucherStatus(null);
+                    }}
+                  />
+                  <button className="btn btn-primary" style={{ width: "auto" }} onClick={handleCheckVoucher} disabled={checkingVoucher}>
+                    {checkingVoucher ? <span className="spinner" /> : "Cek"}
+                  </button>
+                </div>
+                {voucherStatus && (
+                  <p style={{ fontSize: ".8rem", marginTop: 8, color: voucherStatus.valid ? "var(--accent)" : "var(--danger)" }}>
+                    {voucherStatus.valid ? `Voucher valid! Potongan ${formatRupiah(voucherStatus.discount ?? 0)}` : voucherStatus.reason}
+                  </p>
+                )}
+              </Card>
+            </>
+          )}
 
           <Card style={{ marginBottom: 16 }}>
             <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>4. Metode Pembayaran</h3>

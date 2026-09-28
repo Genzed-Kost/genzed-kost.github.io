@@ -45,6 +45,9 @@ jobs:
           # Landing page statis — disalin apa adanya, TIDAK diproses Vite.
           cp index.html publish/
           cp 404.html publish/
+          cp peraturan.html publish/
+          cp faq.html publish/
+          cp privasi.html publish/
           cp logo.png publish/
           cp logo.svg publish/
           cp robots.txt publish/

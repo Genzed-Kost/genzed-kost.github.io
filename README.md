@@ -10,7 +10,7 @@ Status pembangunan:
 - ✅ **Modul 2 — Dashboard Penghuni** (info kamar, ringkasan tagihan/deposit/voucher, pengingat jatuh tempo H-7/H-3/H-1/H-0, komplain, profil read-only — ubah data lewat komplain kategori "Ubah Data Diri", dokumen)
 - ✅ **Modul 3 — Tagihan** (generate tagihan bulanan otomatis dengan prorata, denda keterlambatan otomatis, halaman rincian tagihan, bayar di muka dengan diskon bertingkat — jenjang diatur admin di Pengaturan)
 - ✅ **Modul 4 — Pembayaran** (manual multi-rekening — bank/QRIS statis/e-wallet, sekaligus otomatis via Midtrans, kombinasi deposit+voucher, link bayar tanpa login, invoice PDF otomatis)
-- ✅ **Modul 5 — Panel Admin** (`/admin`) — verifikasi transfer manual (+ batalkan pembayaran yang salah verifikasi, efeknya otomatis dibalik lewat ledger), kelola rekening pembayaran, kamar/tipe kamar/penghuni/kontrak (+ akhiri kontrak/checkout dengan hitung refund deposit otomatis), voucher/denda/pengaturan pembayaran, laporan (pemasukan, tunggakan, hunian, ekspor CSV), audit log, balas komplain
+- ✅ **Modul 5 — Panel Admin** (`/admin`) — verifikasi transfer manual (+ batalkan pembayaran yang salah verifikasi, efeknya otomatis dibalik lewat ledger), kelola rekening pembayaran, kamar/tipe kamar/penghuni/kontrak (+ akhiri kontrak/checkout dengan hitung refund deposit otomatis, + kelola co-tenant/split payment kamar berdua), voucher/denda/pengaturan pembayaran, laporan (pemasukan, tunggakan, hunian, ekspor CSV), audit log, balas komplain
 
 **Semua 5 modul dari brief awal sudah selesai dibangun.** Yang masih jadi keterbatasan (lihat "Catatan Keterbatasan" di paling bawah): split payment kamar berdua belum ada (butuh keputusan desain tambahan), dan seluruh sistem belum pernah dites jalan nyata karena komputer ini tidak ada Node.js/Deno terinstall.
 
@@ -83,6 +83,7 @@ Status pembangunan:
    supabase functions deploy end-tenancy
    supabase functions deploy cancel-payment
    supabase functions deploy create-advance-payment
+   supabase functions deploy create-share-payment
    ```
    Lalu tambahkan secret Vault buat jadwal cek transaksi kedaluwarsa (pakai `reminder_cron_secret` yang sama):
    ```sql

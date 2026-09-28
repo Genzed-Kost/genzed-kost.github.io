@@ -7,9 +7,15 @@ import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { allocatePayment } from "../_shared/payment.ts";
 import { deductDeposit, getDepositBalance } from "../_shared/confirmPayment.ts";
 import { sendWhatsApp } from "../_shared/whatsapp.ts";
+import { inclusiveDayCount } from "../_shared/billing.ts";
 
 function rupiah(n: number): string {
   return "Rp" + Math.round(n).toLocaleString("id-ID");
+}
+
+function jakartaToday(): Date {
+  const s = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date());
+  return new Date(`${s}T00:00:00.000Z`);
 }
 
 Deno.serve(async (req) => {
@@ -102,6 +108,40 @@ Deno.serve(async (req) => {
       .in("status", ["TERBIT", "SEBAGIAN_DIBAYAR", "JATUH_TEMPO"]);
     const finalOwed = (invoicesAfter ?? []).reduce((sum, inv) => sum + (Number(inv.total) - Number(inv.paid_total)), 0);
 
+    // 3.5) Tagihan LUNAS yang periodenya belum habis (mis. hasil bayar di muka) —
+    // bagian yang belum kepake direfund proporsional, di luar hitungan deposit
+    // di atas (ini uang yang udah masuk dari pembayaran, bukan saldo deposit).
+    const todayStr = jakartaToday().toISOString().slice(0, 10);
+    const { data: prepaidInvoices } = await admin
+      .from("invoices")
+      .select("id, invoice_number, period_start, period_end, total")
+      .eq("tenant_id", tenancy.tenant_id)
+      .eq("status", "LUNAS")
+      .gt("period_end", todayStr);
+
+    let prepaidRefund = 0;
+    for (const inv of prepaidInvoices ?? []) {
+      const periodStart = new Date(`${inv.period_start}T00:00:00.000Z`);
+      const periodEnd = new Date(`${inv.period_end}T00:00:00.000Z`);
+      const effectiveStart = periodStart > jakartaToday() ? periodStart : jakartaToday();
+      const totalDays = inclusiveDayCount(periodStart, periodEnd);
+      const unusedDays = inclusiveDayCount(effectiveStart, periodEnd);
+      if (unusedDays <= 0 || totalDays <= 0) continue;
+      const unusedAmount = Math.round((Number(inv.total) * unusedDays) / totalDays);
+      if (unusedAmount > 0) prepaidRefund += unusedAmount;
+    }
+    if (prepaidRefund > 0) {
+      await admin.from("ledger_entries").insert({
+        tenant_id: tenancy.tenant_id,
+        entry_type: "REFUND",
+        amount: -prepaidRefund,
+        balance_after: await getDepositBalance(admin, tenancy.tenant_id),
+        reference_type: "tenancy",
+        reference_id: tenancy.id,
+        description: `Refund sisa periode bayar di muka yang belum kepake saat checkout (${(prepaidInvoices ?? []).map((i) => i.invoice_number).join(", ")})`,
+      });
+    }
+
     // 4) Tutup kontrak, bebasin kamar, nonaktifkan akun (riwayat tetap tersimpan).
     await admin
       .from("tenancies")
@@ -109,6 +149,8 @@ Deno.serve(async (req) => {
       .eq("id", tenancy.id);
     await admin.from("rooms").update({ is_occupied: false }).eq("id", tenancy.room_id);
     await admin.from("profiles").update({ is_active: false }).eq("id", tenancy.tenant_id);
+
+    const totalRefund = refundAmount + prepaidRefund;
 
     await admin.from("audit_logs").insert({
       actor_id: caller.user.id,
@@ -121,6 +163,8 @@ Deno.serve(async (req) => {
         damage_deduction: damageDeduction,
         damage_note: damage_note ?? null,
         refund_amount: refundAmount,
+        prepaid_refund: prepaidRefund,
+        total_refund: totalRefund,
         final_owed: finalOwed,
       },
     });
@@ -134,9 +178,10 @@ Deno.serve(async (req) => {
       ];
       if (damageDeduction > 0) lines.push(`Potongan kerusakan: -${rupiah(damageDeduction)}${damage_note ? ` (${damage_note})` : ""}`);
       if (allocation.totalAllocated > 0) lines.push(`Dipakai lunasi tagihan tertunggak: -${rupiah(allocation.totalAllocated)}`);
-      if (refundAmount > 0) lines.push(`💰 Refund yang perlu dikembalikan ke lo: ${rupiah(refundAmount)}`);
+      if (prepaidRefund > 0) lines.push(`Sisa periode bayar di muka yang belum kepake: ${rupiah(prepaidRefund)}`);
+      if (totalRefund > 0) lines.push(`💰 Refund yang perlu dikembalikan ke lo: ${rupiah(totalRefund)}`);
       if (finalOwed > 0) lines.push(`⚠️ Masih ada tagihan belum lunas: ${rupiah(finalOwed)} — mohon diselesaikan ke admin.`);
-      if (refundAmount === 0 && finalOwed === 0) lines.push("Semua tagihan lunas, nggak ada sisa deposit. Makasih ya udah tinggal di Genzed Kost! 🙏");
+      if (totalRefund === 0 && finalOwed === 0) lines.push("Semua tagihan lunas, nggak ada sisa deposit. Makasih ya udah tinggal di Genzed Kost! 🙏");
       await sendWhatsApp(tenant.phone, lines.join("\n"));
     } catch {
       // notifikasi gagal tidak menggagalkan proses checkout yang sudah tercatat
@@ -147,7 +192,9 @@ Deno.serve(async (req) => {
       deposit_balance_before: depositBalanceBefore,
       damage_deduction: damageDeduction,
       applied_to_invoices: allocation.totalAllocated,
-      refund_amount: refundAmount,
+      refund_amount: totalRefund,
+      deposit_refund: refundAmount,
+      prepaid_refund: prepaidRefund,
       final_owed: finalOwed,
     });
   } catch (err) {

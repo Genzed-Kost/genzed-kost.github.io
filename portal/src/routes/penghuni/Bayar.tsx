@@ -12,6 +12,8 @@ import type { PaymentAccount } from "../../types/database";
 
 type OutstandingInvoice = { id: string; invoice_number: string; due_date: string; total: number; paid_total: number };
 type Method = "TRANSFER_MANUAL" | "QRIS_STATIS" | "GATEWAY";
+type DiscountTier = { months: number; discount_percent: number };
+type ActiveTenancy = { id: string; billing_cycle: string; monthly_rate: number };
 
 type PaymentResult = {
   payment: { id: string; payment_number: string; method: string; expires_at: string; status: string };
@@ -46,6 +48,12 @@ export default function Bayar() {
   const [publicLink, setPublicLink] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [proofSubmitted, setProofSubmitted] = useState(false);
+
+  const [payMode, setPayMode] = useState<"normal" | "advance">("normal");
+  const [tenancy, setTenancy] = useState<ActiveTenancy | null>(null);
+  const [discountTiers, setDiscountTiers] = useState<DiscountTier[]>([]);
+  const [advanceMonths, setAdvanceMonths] = useState<number | null>(null);
+  const [advanceSubmitting, setAdvanceSubmitting] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -90,6 +98,27 @@ export default function Bayar() {
       });
   }, []);
 
+  useEffect(() => {
+    if (!profile) return;
+    supabase
+      .from("tenancies")
+      .select("id, billing_cycle, monthly_rate")
+      .eq("tenant_id", profile.id)
+      .eq("status", "AKTIF")
+      .maybeSingle()
+      .then(({ data }) => setTenancy(data as ActiveTenancy | null));
+    supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "advance_payment_discounts")
+      .maybeSingle()
+      .then(({ data }) => {
+        const tiers = ((data?.value ?? []) as DiscountTier[]).slice().sort((a, b) => a.months - b.months);
+        setDiscountTiers(tiers);
+        if (tiers.length > 0) setAdvanceMonths(tiers[0].months);
+      });
+  }, [profile]);
+
   const selectedInvoices = useMemo(() => (invoices ?? []).filter((i) => selected.has(i.id)), [invoices, selected]);
   const totalOutstanding = useMemo(
     () => selectedInvoices.reduce((sum, i) => sum + (Number(i.total) - Number(i.paid_total)), 0),
@@ -101,6 +130,11 @@ export default function Bayar() {
   const afterVoucher = Math.max(0, transactionAmount - voucherDiscount);
   const depositApplied = useDeposit ? Math.min(depositBalance, afterVoucher) : 0;
   const amountToPay = Math.max(0, afterVoucher - depositApplied);
+
+  const selectedTier = discountTiers.find((t) => t.months === advanceMonths) ?? null;
+  const advanceSubtotal = tenancy && selectedTier ? tenancy.monthly_rate * selectedTier.months : 0;
+  const advanceDiscount = selectedTier ? Math.round((advanceSubtotal * selectedTier.discount_percent) / 100) : 0;
+  const advanceTotal = advanceSubtotal - advanceDiscount;
 
   function toggleInvoice(id: string) {
     setSelected((prev) => {
@@ -199,6 +233,55 @@ export default function Bayar() {
       setError("Terjadi kesalahan. Coba lagi ya.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleAdvanceSubmit() {
+    setError(null);
+    if (!tenancy || !selectedTier) {
+      setError("Pilih durasi bayar di muka dulu.");
+      return;
+    }
+    if (method === "TRANSFER_MANUAL" && !selectedAccountId) {
+      setError("Pilih rekening tujuan transfer dulu.");
+      return;
+    }
+    setAdvanceSubmitting(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const res = await fetch(functionsUrl("create-advance-payment"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({
+          tenancy_id: tenancy.id,
+          months_count: selectedTier.months,
+          method,
+          payment_account_id: method === "TRANSFER_MANUAL" ? selectedAccountId : undefined,
+          want_public_link: wantPublicLink,
+          idempotency_key: crypto.randomUUID(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Gagal membuat pembayaran di muka. Coba lagi ya.");
+        return;
+      }
+
+      if (method === "GATEWAY" && data.redirect_url) {
+        window.location.href = data.redirect_url;
+        return;
+      }
+
+      setResult(data);
+      if (wantPublicLink && data.payment.public_link_token) {
+        setPublicLink(`${window.location.origin}/bayar/publik/${data.payment.public_link_token}`);
+      }
+    } catch {
+      setError("Terjadi kesalahan. Coba lagi ya.");
+    } finally {
+      setAdvanceSubmitting(false);
     }
   }
 
@@ -318,7 +401,102 @@ export default function Bayar() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {invoices.length === 0 ? (
+      {tenancy?.billing_cycle === "BULANAN" && discountTiers.length > 0 && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          <button
+            type="button"
+            className={payMode === "normal" ? "btn btn-primary" : "btn-link"}
+            style={{ width: "auto" }}
+            onClick={() => setPayMode("normal")}
+          >
+            Bayar Tagihan
+          </button>
+          <button
+            type="button"
+            className={payMode === "advance" ? "btn btn-primary" : "btn-link"}
+            style={{ width: "auto" }}
+            onClick={() => setPayMode("advance")}
+          >
+            💸 Bayar di Muka (Diskon)
+          </button>
+        </div>
+      )}
+
+      {payMode === "advance" && tenancy ? (
+        <>
+          <Card style={{ marginBottom: 16 }}>
+            <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>Pilih Durasi</h3>
+            {discountTiers.map((t) => (
+              <label key={t.months} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", cursor: "pointer" }}>
+                <input type="radio" name="advanceMonths" checked={advanceMonths === t.months} onChange={() => setAdvanceMonths(t.months)} />
+                <span style={{ fontSize: ".85rem" }}>
+                  {t.months} bulan — potong {t.discount_percent}%
+                </span>
+              </label>
+            ))}
+          </Card>
+
+          <Card style={{ marginBottom: 16 }}>
+            <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>Metode Pembayaran</h3>
+            {(["TRANSFER_MANUAL", "QRIS_STATIS", "GATEWAY"] as Method[]).map((m) => (
+              <label key={m} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", cursor: "pointer" }}>
+                <input type="radio" name="advanceMethod" checked={method === m} onChange={() => setMethod(m)} />
+                <span style={{ fontSize: ".85rem" }}>
+                  {m === "TRANSFER_MANUAL" && "🏦 Transfer Manual"}
+                  {m === "QRIS_STATIS" && "📱 QRIS"}
+                  {m === "GATEWAY" && "⚡ Otomatis (VA/E-wallet/Retail via Midtrans)"}
+                </span>
+              </label>
+            ))}
+            {method === "TRANSFER_MANUAL" && (
+              <div style={{ marginTop: 8, marginLeft: 26, display: "flex", flexDirection: "column", gap: 6 }}>
+                {accounts === null ? (
+                  <span style={{ fontSize: ".8rem", color: "var(--muted)" }}>Memuat rekening…</span>
+                ) : accounts.length === 0 ? (
+                  <span style={{ fontSize: ".8rem", color: "var(--danger)" }}>Belum ada rekening aktif. Hubungi admin kost.</span>
+                ) : (
+                  accounts.map((a) => (
+                    <label key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                      <input type="radio" name="advancePaymentAccount" checked={selectedAccountId === a.id} onChange={() => setSelectedAccountId(a.id)} />
+                      <span style={{ fontSize: ".82rem" }}>
+                        {a.account_type === "QRIS"
+                          ? "QRIS"
+                          : a.account_type === "EWALLET"
+                            ? a.ewallet_provider
+                            : a.account_type === "CRYPTO"
+                              ? `${a.crypto_asset} (${a.crypto_network})`
+                              : a.bank_name}
+                        {a.account_type !== "CRYPTO" && a.account_number ? ` · ${a.account_number}` : ""}
+                      </span>
+                    </label>
+                  ))
+                )}
+              </div>
+            )}
+          </Card>
+
+          <Card style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: ".85rem" }}>
+              <span style={{ color: "var(--muted)" }}>Subtotal ({selectedTier?.months ?? 0} bulan × {formatRupiah(tenancy.monthly_rate)})</span>
+              <span>{formatRupiah(advanceSubtotal)}</span>
+            </div>
+            {advanceDiscount > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: ".85rem", color: "var(--accent)" }}>
+                <span>Diskon {selectedTier?.discount_percent}%</span>
+                <span>-{formatRupiah(advanceDiscount)}</span>
+              </div>
+            )}
+            <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid var(--border)", fontWeight: 700 }}>
+              <span>Total Bayar</span>
+              <span>{formatRupiah(advanceTotal)}</span>
+            </div>
+          </Card>
+
+          <button className="btn btn-primary" onClick={handleAdvanceSubmit} disabled={advanceSubmitting || !selectedTier}>
+            {advanceSubmitting ? <span className="spinner" /> : "Bayar di Muka Sekarang"}
+          </button>
+        </>
+      ) : invoices.length === 0 ? (
         <Card>
           <EmptyState icon="🎉" text="Nggak ada tagihan yang perlu dibayar. Mantap!" />
         </Card>

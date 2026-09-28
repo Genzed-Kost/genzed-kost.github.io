@@ -20,6 +20,7 @@ const ACTION_LABEL: Record<string, string> = {
   delete_payment_account: "Hapus rekening",
   end_tenancy: "Akhiri kontrak (checkout)",
   cancel_payment: "Batalkan pembayaran",
+  create_advance_payment: "Bayar di muka",
 };
 
 export default function AuditLog() {

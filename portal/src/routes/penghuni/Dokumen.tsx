@@ -68,7 +68,8 @@ export default function Dokumen() {
     }
   }
 
-  async function handleDelete(path: string) {
+  async function handleDelete(path: string, name: string) {
+    if (!confirm(`Hapus dokumen "${name}" secara permanen?`)) return;
     await supabase.storage.from(BUCKET).remove([path]);
     await loadFiles();
   }
@@ -114,7 +115,7 @@ export default function Dokumen() {
                 <button className="btn-link" onClick={() => handleDownload(f.path)}>
                   Lihat
                 </button>
-                <button className="btn-link" style={{ color: "var(--danger)" }} onClick={() => handleDelete(f.path)}>
+                <button className="btn-link" style={{ color: "var(--danger)" }} onClick={() => handleDelete(f.path, f.name)}>
                   Hapus
                 </button>
               </div>

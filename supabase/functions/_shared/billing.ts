@@ -159,3 +159,43 @@ export function calculateFirstPeriodSewaAmount(
   const amount = Math.round((rate * occupiedDays) / totalDays);
   return { amount, isProrated: true, occupiedDays, totalDays };
 }
+
+export type AdvancePeriod = { periodStart: Date; periodEnd: Date };
+
+export function generateAdvancePeriods(startAfter: Date, monthsCount: number, anchor: BillingAnchor): AdvancePeriod[] {
+  const periods: AdvancePeriod[] = [];
+  let periodStart = startAfter;
+  for (let i = 0; i < monthsCount; i++) {
+    const periodEnd = nextAnchoredPeriodEnd(periodStart, "BULANAN", anchor);
+    periods.push({ periodStart, periodEnd });
+    periodStart = new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000);
+  }
+  return periods;
+}
+
+export function calculateAdvancePaymentTotal(
+  monthlyRate: number,
+  monthsCount: number,
+  discountPercent: number
+): { subtotal: number; discount: number; total: number } {
+  const subtotal = Math.round(monthlyRate) * monthsCount;
+  const discount = Math.round((subtotal * discountPercent) / 100);
+  return { subtotal, discount, total: subtotal - discount };
+}
+
+export function distributeDiscount(perPeriodAmounts: number[], totalDiscount: number): number[] {
+  if (perPeriodAmounts.length === 0) return [];
+  const subtotal = perPeriodAmounts.reduce((s, a) => s + a, 0);
+  const result: number[] = [];
+  let allocated = 0;
+  for (let i = 0; i < perPeriodAmounts.length; i++) {
+    if (i === perPeriodAmounts.length - 1) {
+      result.push(totalDiscount - allocated);
+    } else {
+      const share = subtotal > 0 ? Math.round((perPeriodAmounts[i] / subtotal) * totalDiscount) : 0;
+      result.push(share);
+      allocated += share;
+    }
+  }
+  return result;
+}

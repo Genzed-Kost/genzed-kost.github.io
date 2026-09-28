@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   addMonthsClamped,
   billingAnchorFromStartDate,
+  calculateAdvancePaymentTotal,
   calculateFirstPeriodSewaAmount,
   calculatePenalty,
   calculateSewaAmount,
   computePeriodEnd,
+  distributeDiscount,
   firstAnchoredPeriodEnd,
   formatInvoiceNumber,
+  generateAdvancePeriods,
   inclusiveDayCount,
   invoicePublishDate,
   nextAnchoredPeriodEnd,
@@ -193,5 +196,73 @@ describe("calculateFirstPeriodSewaAmount", () => {
     expect(r.totalDays).toBe(30);
     expect(r.occupiedDays).toBe(26);
     expect(r.isProrated).toBe(true);
+  });
+});
+
+describe("generateAdvancePeriods", () => {
+  it("anchor 1, 3 bulan berturutan dari awal bulan", () => {
+    const periods = generateAdvancePeriods(d("2026-10-01"), 3, 1);
+    expect(periods).toHaveLength(3);
+    expect(periods.map((p) => [p.periodStart.toISOString().slice(0, 10), p.periodEnd.toISOString().slice(0, 10)])).toEqual([
+      ["2026-10-01", "2026-10-31"],
+      ["2026-11-01", "2026-11-30"],
+      ["2026-12-01", "2026-12-31"],
+    ]);
+  });
+  it("anchor 16, periode nyambung dari tanggal 16 ke 16 tanpa gap/tumpang tindih", () => {
+    const periods = generateAdvancePeriods(d("2026-09-16"), 2, 16);
+    expect(periods.map((p) => [p.periodStart.toISOString().slice(0, 10), p.periodEnd.toISOString().slice(0, 10)])).toEqual([
+      ["2026-09-16", "2026-10-15"],
+      ["2026-10-16", "2026-11-15"],
+    ]);
+  });
+  it("periode berikutnya selalu mulai sehari setelah periode sebelumnya berakhir (nggak ada gap)", () => {
+    const periods = generateAdvancePeriods(d("2026-01-01"), 12, 1);
+    for (let i = 1; i < periods.length; i++) {
+      const prevEnd = periods[i - 1].periodEnd.getTime();
+      const curStart = periods[i].periodStart.getTime();
+      expect(curStart - prevEnd).toBe(24 * 60 * 60 * 1000);
+    }
+  });
+});
+
+describe("calculateAdvancePaymentTotal", () => {
+  it("3 bulan, diskon 2%", () => {
+    const r = calculateAdvancePaymentTotal(1000000, 3, 2);
+    expect(r.subtotal).toBe(3000000);
+    expect(r.discount).toBe(60000);
+    expect(r.total).toBe(2940000);
+  });
+  it("12 bulan, diskon 10%", () => {
+    const r = calculateAdvancePaymentTotal(800000, 12, 10);
+    expect(r.subtotal).toBe(9600000);
+    expect(r.discount).toBe(960000);
+    expect(r.total).toBe(8640000);
+  });
+  it("diskon 0% -> total sama dengan subtotal", () => {
+    const r = calculateAdvancePaymentTotal(1000000, 6, 0);
+    expect(r.discount).toBe(0);
+    expect(r.total).toBe(r.subtotal);
+  });
+});
+
+describe("distributeDiscount", () => {
+  it("terbagi rata kalau habis dibagi", () => {
+    expect(distributeDiscount([1000000, 1000000, 1000000], 60000)).toEqual([20000, 20000, 20000]);
+  });
+  it("sisa pembulatan masuk ke periode terakhir, total tetap presisi", () => {
+    const result = distributeDiscount([1000000, 1000000, 1000000], 50000);
+    expect(result.reduce((a, b) => a + b, 0)).toBe(50000);
+    expect(result[0]).toBe(16667);
+    expect(result[1]).toBe(16667);
+    expect(result[2]).toBe(16666);
+  });
+  it("proporsional kalau nominal per periode beda-beda (mis. periode pertama prorata)", () => {
+    const result = distributeDiscount([500000, 1000000, 1000000], 100000);
+    expect(result.reduce((a, b) => a + b, 0)).toBe(100000);
+    expect(result[0]).toBe(20000);
+  });
+  it("array kosong -> hasil kosong", () => {
+    expect(distributeDiscount([], 50000)).toEqual([]);
   });
 });

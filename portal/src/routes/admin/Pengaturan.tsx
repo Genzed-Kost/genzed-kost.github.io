@@ -4,13 +4,14 @@ import { Card } from "../../components/Card";
 import { Modal } from "../../components/Modal";
 import Rekening from "./Rekening";
 import Denda from "./Denda";
+import AdvanceDiscounts from "./AdvanceDiscounts";
 
 export default function Pengaturan() {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [openModal, setOpenModal] = useState<"rekening" | "denda" | null>(null);
+  const [openModal, setOpenModal] = useState<"rekening" | "denda" | "advance" | null>(null);
 
   const [gatewayEnabled, setGatewayEnabled] = useState(false);
   const [adminFeeBorneBy, setAdminFeeBorneBy] = useState<"tenant" | "pemilik">("tenant");
@@ -94,6 +95,16 @@ export default function Pengaturan() {
       </Card>
 
       <Card style={{ marginBottom: 16 }}>
+        <h3 style={{ fontSize: ".95rem", marginBottom: 8 }}>Bayar di Muka (Diskon)</h3>
+        <p style={{ fontSize: ".85rem", color: "var(--muted)", marginBottom: 12 }}>
+          Jenjang diskon buat penghuni siklus Bulanan yang mau bayar beberapa bulan sekaligus.
+        </p>
+        <button type="button" className="btn-link" onClick={() => setOpenModal("advance")}>
+          Kelola Jenjang Diskon →
+        </button>
+      </Card>
+
+      <Card style={{ marginBottom: 16 }}>
         <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>Pembayaran Otomatis (Midtrans)</h3>
         <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, cursor: "pointer" }}>
           <input type="checkbox" checked={gatewayEnabled} onChange={(e) => setGatewayEnabled(e.target.checked)} />
@@ -143,6 +154,11 @@ export default function Pengaturan() {
       {openModal === "denda" && (
         <Modal title="Aturan Denda Keterlambatan" onClose={() => setOpenModal(null)}>
           <Denda />
+        </Modal>
+      )}
+      {openModal === "advance" && (
+        <Modal title="Bayar di Muka (Diskon)" onClose={() => setOpenModal(null)}>
+          <AdvanceDiscounts />
         </Modal>
       )}
     </div>

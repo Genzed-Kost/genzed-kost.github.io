@@ -12,7 +12,7 @@ Status pembangunan:
 - ✅ **Modul 4 — Pembayaran** (manual multi-rekening — bank/QRIS statis/e-wallet, sekaligus otomatis via Midtrans, kombinasi deposit+voucher, link bayar tanpa login, invoice PDF otomatis)
 - ✅ **Modul 5 — Panel Admin** (`/admin`) — verifikasi transfer manual (+ batalkan pembayaran yang salah verifikasi, efeknya otomatis dibalik lewat ledger), kelola rekening pembayaran, kamar/tipe kamar/penghuni/kontrak (+ akhiri kontrak/checkout dengan hitung refund deposit otomatis, + kelola co-tenant/split payment kamar berdua), voucher/denda/pengaturan pembayaran (biaya admin per channel Midtrans), laporan (pemasukan, tunggakan, hunian, rekonsiliasi Midtrans, ekspor Excel `.xlsx`), audit log, balas komplain, login dikunci sementara setelah 5x gagal beruntun
 
-**Semua 5 modul dari brief awal sudah selesai dibangun.** Yang masih jadi keterbatasan (lihat "Catatan Keterbatasan" di paling bawah): split payment kamar berdua belum ada (butuh keputusan desain tambahan), dan seluruh sistem belum pernah dites jalan nyata karena komputer ini tidak ada Node.js/Deno terinstall.
+**Semua 5 modul dari brief awal sudah selesai dibangun**, ditambah 3 prioritas lanjutan: bayar di muka dengan diskon, split payment kamar berdua, dan perbaikan keandalan (rekonsiliasi Midtrans, kunci login, biaya per channel, ekspor Excel asli). Lihat [`CHECKLIST.md`](CHECKLIST.md) buat daftar yang perlu dicek/diisi sebelum dipakai penghuni sungguhan (banyak yang udah dites live, tapi beberapa hal — foto, testimoni asli, alamat lengkap, mode Midtrans — sengaja nunggu data asli dari pemilik kost).
 
 ---
 
@@ -197,6 +197,8 @@ Sudah dijelaskan di langkah 10 pada bagian **Setup Supabase** di atas — ringka
 
 ## Catatan Keterbatasan
 
-- **Belum pernah dites jalan nyata.** Seluruh sistem ini ditulis tanpa Node.js/Deno terinstall di komputer pengembangan, jadi belum ada `npm install`/`npm run build`/`npm run test`/`supabase functions serve` yang benar-benar dijalankan. Sebelum dipakai penghuni sungguhan: install Node.js, jalankan test (`cd portal && npm install && npm run test`), coba portal lokal, dan **WAJIB** uji Modul Pembayaran di Midtrans **Sandbox** dulu sebelum nyalakan `payment_gateway_enabled` di production.
+- **Sudah dites live berkali-kali** selama pengembangan — bukan cuma `npm run test` (68 unit test buat logika billing/pembayaran), tapi juga tes ujung-ke-ujung langsung ke project Supabase & Midtrans Sandbox asli, plus verifikasi di situs yang sudah di-deploy. Tetap disarankan ulang tes serupa kalau lo fork/pindah ke project Supabase baru, karena environment production lo beda dari yang dipakai testing.
 - **Rekonsiliasi Midtrans** cuma jalan buat pembayaran 30 hari terakhir dan cuma MELAPORKAN selisih (nggak auto-perbaiki status/duit) — admin yang review manual lewat Laporan sebelum ambil tindakan.
+- **Channel Midtrans** (VA, e-wallet, QRIS, retail) cuma bisa dipakai penghuni kalau beneran diaktifkan dulu di dashboard Midtrans-nya — lihat catatan di langkah 10.
+- Belum ada galeri foto kamar & testimoni asli di landing page — sengaja nunggu foto dan testimoni asli dari pemilik kost, bukan isi placeholder/palsu.
 - Admin pertama **harus** dibuat manual lewat Supabase dashboard (langkah 13) — nggak ada cara bikin admin dari dalam aplikasi, ini memang disengaja demi keamanan.

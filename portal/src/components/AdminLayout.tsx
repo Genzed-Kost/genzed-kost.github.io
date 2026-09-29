@@ -13,7 +13,6 @@ const MENU = [
   { to: "/admin/dokumen", label: "Dokumen", icon: "📁" },
   { to: "/admin/voucher", label: "Voucher", icon: "🎟️" },
   { to: "/admin/pengaturan", label: "Pengaturan", icon: "⚙️" },
-  { to: "/admin/laporan", label: "Laporan", icon: "📈" },
   { to: "/admin/audit-log", label: "Audit Log", icon: "📜" },
 ];
 

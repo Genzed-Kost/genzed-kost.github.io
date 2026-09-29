@@ -14,7 +14,7 @@ Status pembangunan:
 
 **Semua 5 modul dari brief awal sudah selesai dibangun**, ditambah beberapa prioritas lanjutan: bayar di muka dengan diskon, split payment kamar berdua, dan perbaikan keandalan (kunci login, nomor invoice/pembayaran atomik biar nggak pernah tabrakan). Lihat [`CHECKLIST.md`](CHECKLIST.md) buat daftar yang perlu dicek/diisi sebelum dipakai penghuni sungguhan (banyak yang udah dites live, tapi beberapa hal — foto, testimoni asli, alamat lengkap — sengaja nunggu data asli dari pemilik kost).
 
-**Catatan:** jalur pembayaran otomatis via Midtrans sempat dibangun tapi DIHAPUS lagi (keputusan bisnis — biaya MDR & kerumitan aktivasi channel nggak sepadan buat skala kost ini). Yang tersedia sekarang: Transfer Manual dan QRIS statis (gambar QR sendiri, bukan Midtrans) — keduanya gratis, nggak ada biaya potongan pihak ketiga.
+**Catatan:** jalur pembayaran otomatis via Midtrans sempat dibangun tapi DIHAPUS lagi (keputusan bisnis — biaya MDR & kerumitan aktivasi channel nggak sepadan buat skala kost ini). Sekarang cuma ada **satu** jalur pembayaran: **Transfer Manual** — penghuni pilih salah satu rekening yang admin kelola (bisa bank, gambar QRIS sendiri, e-wallet, atau kripto), bukan 2 metode terpisah kayak sebelumnya (dulu ada opsi "QRIS" yang bikin bingung karena udah ada gambar QRIS di daftar rekening juga). Nomor invoice & pembayaran juga nyantumin kode kamar (format `INV-YYYYMM-KODEKAMAR-NNNN`), jadi gampang dibedain sekilas antar penghuni.
 
 ---
 
@@ -93,11 +93,7 @@ Status pembangunan:
    ```sql
    select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/expire-stale-payments', 'expire_payments_function_url');
    ```
-9. Setup pembayaran **manual** (selalu aktif, gratis) — bisa lebih dari satu rekening (bank, QRIS gambar statis, e-wallet, kripto). Kelola lewat popup **Admin → Pengaturan → Kelola Rekening** di portal setelah akun admin dibuat (langkah 11): tambah, ubah, aktif/nonaktifkan, urutkan, hapus. Minimal 1 rekening harus aktif sebelum penghuni bisa pakai jalur transfer manual. Migrasi [`20250112000000_payment_accounts.sql`](supabase/migrations/20250112000000_payment_accounts.sql) otomatis mindahin rekening lama (kalau sudah pernah diisi lewat setting `bank_transfer_info`) jadi baris pertama.
-   - (Opsional) Kalau mau QRIS **dinamis** yang otomatis nampilin nominal + kode unik (beda dari QRIS gambar statis di atas — ini generate ulang tiap transaksi), set nomor akun QRIS sebagai secret (JANGAN taruh di kode/migrasi):
-     ```bash
-     supabase secrets set QRIS_MERCHANT_ACCOUNT=nomor_akun_qris_kost
-     ```
+9. Setup pembayaran **manual** (satu-satunya jalur pembayaran, selalu aktif, gratis) — bisa lebih dari satu rekening (bank, gambar QRIS, e-wallet, kripto), penghuni tinggal pilih salah satu pas bayar. Kelola lewat popup **Admin → Pengaturan → Kelola Rekening** di portal setelah akun admin dibuat (langkah 11): tambah, ubah, aktif/nonaktifkan, urutkan, hapus. Minimal 1 rekening harus aktif. Migrasi [`20250112000000_payment_accounts.sql`](supabase/migrations/20250112000000_payment_accounts.sql) otomatis mindahin rekening lama (kalau sudah pernah diisi lewat setting `bank_transfer_info`) jadi baris pertama.
 10. (Opsional) Kirim invoice PDF juga lewat email, selain WhatsApp — daftar gratis di [resend.com](https://resend.com):
     ```bash
     supabase secrets set RESEND_API_KEY=isi_api_key_resend

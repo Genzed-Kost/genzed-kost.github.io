@@ -26,9 +26,9 @@ Beberapa bagian sengaja dibiarkan kosong/placeholder daripada diisi konten palsu
 - ⬜ **Set WhatsApp gateway pakai akun asli** (`FONNTE_TOKEN`) — testing sejauh ini pakai
   akun WA testing, pastikan diganti ke nomor WA resmi kost sebelum kirim notifikasi ke
   penghuni sungguhan.
-- ⬜ **Minimal 1 rekening transfer manual aktif** di Admin → Pengaturan → Kelola Rekening,
-  supaya penghuni bisa bayar (jalur pembayaran otomatis Midtrans sudah dihapus dari
-  sistem — cuma Transfer Manual & QRIS statis yang tersedia sekarang).
+- ✅ **Minimal 1 rekening transfer manual aktif** — sudah ada Bank Jago, QRIS Kost Genzed,
+  dan beberapa wallet kripto di Admin → Pengaturan → Kelola Rekening (satu-satunya jalur
+  pembayaran sekarang, jalur otomatis Midtrans sudah dihapus dari sistem).
 
 ## 3. Verifikasi Teknis (sudah dicek otomatis, 2026-09-29)
 
@@ -40,7 +40,10 @@ Beberapa bagian sengaja dibiarkan kosong/placeholder daripada diisi konten palsu
   diperbaiki (lihat catatan di README).
 - ✅ Nomor invoice & pembayaran sekarang pakai counter atomik (`number_counters` +
   `next_document_number()`) — dijamin nggak pernah tabrakan antar penghuni walau
-  diproses bersamaan.
+  diproses bersamaan, DAN nyantumin kode kamar (format `INV-YYYYMM-KODEKAMAR-NNNN`)
+  biar gampang dibedain antar penghuni sekilas.
+- ✅ Jalur pembayaran disederhanakan jadi satu ("Transfer Manual" — pilih rekening dari
+  daftar, termasuk QRIS), nggak ada lagi 2 opsi metode yang tumpang tindih.
 - ✅ 68 unit test (`portal/src/lib/*.test.ts`) lolos semua — logika alokasi pembayaran,
   voucher, denda, bayar di muka, split payment co-tenant.
 - ✅ Semua halaman statis (`index.html`, `peraturan.html`, `faq.html`, `privasi.html`,

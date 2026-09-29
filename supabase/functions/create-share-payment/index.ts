@@ -6,10 +6,8 @@
 import { getSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { calculateAdminFee, generateUniqueCode, type FeeConfig } from "../_shared/payment.ts";
-import { buildQrisPayload } from "../_shared/qris.ts";
 import { nextDocumentNumber } from "../_shared/numbering.ts";
-
-type Method = "TRANSFER_MANUAL" | "QRIS_STATIS";
+import { getActiveRoomCode } from "../_shared/roomCode.ts";
 
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
@@ -27,13 +25,11 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       invoice_id,
-      method,
       payment_account_id,
       want_public_link,
       idempotency_key,
     }: {
       invoice_id: string;
-      method: Method;
       payment_account_id?: string;
       want_public_link?: boolean;
       idempotency_key: string;
@@ -41,10 +37,7 @@ Deno.serve(async (req) => {
 
     if (!idempotency_key) return jsonResponse({ error: "idempotency_key wajib diisi." }, 400);
     if (!invoice_id) return jsonResponse({ error: "invoice_id wajib diisi." }, 400);
-    if (!["TRANSFER_MANUAL", "QRIS_STATIS"].includes(method)) {
-      return jsonResponse({ error: "Metode pembayaran tidak valid." }, 400);
-    }
-    if (method === "TRANSFER_MANUAL" && !payment_account_id) {
+    if (!payment_account_id) {
       return jsonResponse({ error: "Pilih rekening tujuan transfer dulu." }, 400);
     }
 
@@ -77,34 +70,23 @@ Deno.serve(async (req) => {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + expiryHours * 60 * 60 * 1000);
     const monthKey = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-    const paymentNumber = await nextDocumentNumber(admin, "PAY", monthKey);
+    const roomCode = await getActiveRoomCode(admin, tenant.id);
+    const paymentNumber = await nextDocumentNumber(admin, "PAY", monthKey, roomCode);
 
-    let dbMethod: string = method;
-    let adminFee = 0;
-    let uniqueCode: number | null = null;
-    let extra: Record<string, unknown> = {};
-
-    adminFee = calculateAdminFee(outstanding, fees.manual);
-    uniqueCode = generateUniqueCode();
+    const adminFee = calculateAdminFee(outstanding, fees.manual);
+    const uniqueCode = generateUniqueCode();
     const grossToTransfer = outstanding + (borneBy === "tenant" ? adminFee : 0) + uniqueCode;
 
-    if (method === "TRANSFER_MANUAL") {
-      const { data: account } = await admin.from("payment_accounts").select("*").eq("id", payment_account_id).eq("is_active", true).maybeSingle();
-      if (!account) return jsonResponse({ error: "Rekening yang dipilih tidak ditemukan atau sudah nonaktif." }, 400);
-      extra = { account, total_to_transfer: grossToTransfer };
-    } else {
-      const merchantAccount = Deno.env.get("QRIS_MERCHANT_ACCOUNT");
-      if (!merchantAccount) return jsonResponse({ error: "QRIS belum dikonfigurasi admin. Pakai transfer manual dulu ya." }, 503);
-      const payload = buildQrisPayload({ merchantAccount, amount: grossToTransfer, referenceCode: paymentNumber });
-      extra = { qris_payload: payload, total_to_transfer: grossToTransfer };
-    }
+    const { data: account } = await admin.from("payment_accounts").select("*").eq("id", payment_account_id).eq("is_active", true).maybeSingle();
+    if (!account) return jsonResponse({ error: "Rekening yang dipilih tidak ditemukan atau sudah nonaktif." }, 400);
+    const extra: Record<string, unknown> = { account, total_to_transfer: grossToTransfer };
 
     const { data: payment, error: payInsertErr } = await admin
       .from("payments")
       .insert({
         payment_number: paymentNumber,
         tenant_id: tenant.id,
-        method: dbMethod,
+        method: "TRANSFER_MANUAL",
         status: "MENUNGGU",
         amount: outstanding,
         admin_fee: adminFee,
@@ -116,7 +98,7 @@ Deno.serve(async (req) => {
         voucher_discount: 0,
         created_by: tenant.id,
         public_link_token: want_public_link ? crypto.randomUUID() : null,
-        payment_account_id: method === "TRANSFER_MANUAL" ? payment_account_id : null,
+        payment_account_id,
       })
       .select("*")
       .single();

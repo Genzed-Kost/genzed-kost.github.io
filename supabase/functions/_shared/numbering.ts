@@ -8,9 +8,11 @@
 // walau dipanggil bersamaan dari mana pun.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 
-export async function nextDocumentNumber(admin: SupabaseClient, prefix: "INV" | "PAY", monthKey: string): Promise<string> {
+export async function nextDocumentNumber(admin: SupabaseClient, prefix: "INV" | "PAY", monthKey: string, roomCode: string): Promise<string> {
+  // Counter tetap satu urutan global per bulan (bukan per kamar) — kode kamar cuma
+  // ditempel ke tampilan nomornya, nggak ngurangin jaminan keunikan dari counter-nya.
   const counterKey = `${prefix}-${monthKey}`;
   const { data, error } = await admin.rpc("next_document_number", { p_key: counterKey });
   if (error || data == null) throw new Error(`Gagal generate nomor ${prefix}: ${error?.message ?? "unknown"}`);
-  return `${prefix}-${monthKey}-${String(data).padStart(4, "0")}`;
+  return `${prefix}-${monthKey}-${roomCode}-${String(data).padStart(4, "0")}`;
 }

@@ -12,6 +12,7 @@ import { getSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { sendWhatsApp } from "../_shared/whatsapp.ts";
 import { jsonResponse } from "../_shared/cors.ts";
 import { nextDocumentNumber } from "../_shared/numbering.ts";
+import { sanitizeRoomCode } from "../_shared/roomCode.ts";
 import {
   billingAnchorFromStartDate,
   calculateFirstPeriodSewaAmount,
@@ -118,12 +119,13 @@ Deno.serve(async (req) => {
         sewa = calculateSewaAmount(fullPeriodRate, periodStart, periodEnd, tenancyStart, tenancyEnd);
       }
 
-      const monthKey = `${today.getUTCFullYear()}${String(today.getUTCMonth() + 1).padStart(2, "0")}`;
-      const invoiceNumber = await nextDocumentNumber(admin, "INV", monthKey);
-
-      const dueDate = toDateOnlyString(addDays(periodStart, dueDays));
       const room = tenancy.rooms as unknown as { room_number: string; room_types: { name: string } } | null;
       const tenant = tenancy.profiles as unknown as { full_name: string; phone: string } | null;
+
+      const monthKey = `${today.getUTCFullYear()}${String(today.getUTCMonth() + 1).padStart(2, "0")}`;
+      const invoiceNumber = await nextDocumentNumber(admin, "INV", monthKey, sanitizeRoomCode(room?.room_number));
+
+      const dueDate = toDateOnlyString(addDays(periodStart, dueDays));
 
       const { data: invoice, error: invInsertErr } = await admin
         .from("invoices")

@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     if (!payment || payment.tenant_id !== caller.user.id) {
       return jsonResponse({ error: "Pembayaran tidak ditemukan." }, 404);
     }
-    if (!["TRANSFER_MANUAL", "QRIS_STATIS"].includes(payment.method)) {
+    if (payment.method !== "TRANSFER_MANUAL") {
       return jsonResponse({ error: "Metode pembayaran ini nggak butuh upload bukti." }, 400);
     }
     if (payment.status !== "MENUNGGU") {

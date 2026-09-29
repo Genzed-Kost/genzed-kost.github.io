@@ -6,22 +6,18 @@ import { loadMyInvoices } from "../../lib/invoices";
 import { formatRupiah } from "../../lib/format";
 import { checkAndCalculateVoucher } from "../../lib/payment";
 import { Card, EmptyState } from "../../components/Card";
-import { QrisDisplay } from "../../components/QrisDisplay";
 import { Countdown } from "../../components/Countdown";
 import { PaymentAccountInfo } from "../../components/PaymentAccountInfo";
 import type { PaymentAccount } from "../../types/database";
 
 type OutstandingInvoice = { id: string; invoice_number: string; due_date: string; total: number; paid_total: number; isShared: boolean };
-type Method = "TRANSFER_MANUAL" | "QRIS_STATIS";
 type DiscountTier = { months: number; discount_percent: number };
 type ActiveTenancy = { id: string; billing_cycle: string; monthly_rate: number };
 
 type PaymentResult = {
   payment: { id: string; payment_number: string; method: string; expires_at: string; status: string };
   account?: PaymentAccount | null;
-  qris_payload?: string;
   total_to_transfer?: number;
-  redirect_url?: string;
 };
 
 export default function Bayar() {
@@ -39,7 +35,6 @@ export default function Bayar() {
   const [voucherCode, setVoucherCode] = useState("");
   const [voucherStatus, setVoucherStatus] = useState<{ valid: boolean; discount?: number; reason?: string } | null>(null);
   const [checkingVoucher, setCheckingVoucher] = useState(false);
-  const [method, setMethod] = useState<Method>("TRANSFER_MANUAL");
   const [accounts, setAccounts] = useState<PaymentAccount[] | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [wantPublicLink, setWantPublicLink] = useState(false);
@@ -201,7 +196,7 @@ export default function Bayar() {
       setError("Pilih minimal 1 tagihan yang mau dibayar.");
       return;
     }
-    if (method === "TRANSFER_MANUAL" && !selectedAccountId) {
+    if (!selectedAccountId) {
       setError("Pilih rekening tujuan transfer dulu.");
       return;
     }
@@ -218,8 +213,7 @@ export default function Bayar() {
           isSharedPayment
             ? {
                 invoice_id: selectedInvoices[0].id,
-                method,
-                payment_account_id: method === "TRANSFER_MANUAL" ? selectedAccountId : undefined,
+                payment_account_id: selectedAccountId,
                 want_public_link: wantPublicLink,
                 idempotency_key: crypto.randomUUID(),
               }
@@ -228,8 +222,7 @@ export default function Bayar() {
                 partial_amount: partialMode && parsedPartial > 0 ? parsedPartial : undefined,
                 use_deposit_amount: useDeposit ? depositBalance : 0,
                 voucher_code: voucherStatus?.valid ? voucherCode.trim() : undefined,
-                method,
-                payment_account_id: method === "TRANSFER_MANUAL" ? selectedAccountId : undefined,
+                payment_account_id: selectedAccountId,
                 want_public_link: wantPublicLink,
                 idempotency_key: crypto.randomUUID(),
               }
@@ -263,7 +256,7 @@ export default function Bayar() {
       setError("Pilih durasi bayar di muka dulu.");
       return;
     }
-    if (method === "TRANSFER_MANUAL" && !selectedAccountId) {
+    if (!selectedAccountId) {
       setError("Pilih rekening tujuan transfer dulu.");
       return;
     }
@@ -278,8 +271,7 @@ export default function Bayar() {
         body: JSON.stringify({
           tenancy_id: tenancy.id,
           months_count: selectedTier.months,
-          method,
-          payment_account_id: method === "TRANSFER_MANUAL" ? selectedAccountId : undefined,
+          payment_account_id: selectedAccountId,
           want_public_link: wantPublicLink,
           idempotency_key: crypto.randomUUID(),
         }),
@@ -362,17 +354,9 @@ export default function Bayar() {
             <Countdown expiresAt={result.payment.expires_at} />
           </div>
 
-          {result.qris_payload && (
-            <div style={{ textAlign: "center", marginTop: 16 }}>
-              <QrisDisplay payload={result.qris_payload} />
-              <p style={{ fontSize: ".78rem", color: "var(--muted)", marginTop: 8 }}>Scan pakai m-banking atau e-wallet apapun.</p>
-            </div>
-          )}
-          {result.payment.method === "TRANSFER_MANUAL" && (
-            <div style={{ marginTop: 16, padding: 14, background: "var(--surface2)", borderRadius: 10 }}>
-              <PaymentAccountInfo account={result.account} />
-            </div>
-          )}
+          <div style={{ marginTop: 16, padding: 14, background: "var(--surface2)", borderRadius: 10 }}>
+            <PaymentAccountInfo account={result.account} />
+          </div>
           <p style={{ fontSize: ".78rem", color: "var(--warn)", marginTop: 12 }}>
             ⚠️ Transfer PAS sesuai nominal di atas (termasuk 3 digit kode unik) supaya admin gampang cocokin pembayaran lo.
           </p>
@@ -413,7 +397,7 @@ export default function Bayar() {
   return (
     <div className="container" style={{ paddingTop: 32, paddingBottom: 48, maxWidth: 560 }}>
       <h1 style={{ fontSize: "1.5rem", marginBottom: 4 }}>Bayar Tagihan</h1>
-      <p style={{ color: "var(--muted)", fontSize: ".9rem", marginBottom: 24 }}>Pilih tagihan, sumber dana, dan metode bayar.</p>
+      <p style={{ color: "var(--muted)", fontSize: ".9rem", marginBottom: 24 }}>Pilih tagihan, sumber dana, dan rekening tujuan.</p>
 
       {error && <div className="alert alert-error">{error}</div>}
 
@@ -453,39 +437,28 @@ export default function Bayar() {
           </Card>
 
           <Card style={{ marginBottom: 16 }}>
-            <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>Metode Pembayaran</h3>
-            {(["TRANSFER_MANUAL", "QRIS_STATIS"] as Method[]).map((m) => (
-              <label key={m} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", cursor: "pointer" }}>
-                <input type="radio" name="advanceMethod" checked={method === m} onChange={() => setMethod(m)} />
-                <span style={{ fontSize: ".85rem" }}>
-                  {m === "TRANSFER_MANUAL" && "🏦 Transfer Manual"}
-                  {m === "QRIS_STATIS" && "📱 QRIS"}
-                </span>
-              </label>
-            ))}
-            {method === "TRANSFER_MANUAL" && (
-              <div style={{ marginTop: 8, marginLeft: 26, display: "flex", flexDirection: "column", gap: 6 }}>
-                {accounts === null ? (
-                  <span style={{ fontSize: ".8rem", color: "var(--muted)" }}>Memuat rekening…</span>
-                ) : accounts.length === 0 ? (
-                  <span style={{ fontSize: ".8rem", color: "var(--danger)" }}>Belum ada rekening aktif. Hubungi admin kost.</span>
-                ) : (
-                  accounts.map((a) => (
-                    <label key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                      <input type="radio" name="advancePaymentAccount" checked={selectedAccountId === a.id} onChange={() => setSelectedAccountId(a.id)} />
-                      <span style={{ fontSize: ".82rem" }}>
-                        {a.account_type === "QRIS"
-                          ? "QRIS"
-                          : a.account_type === "EWALLET"
-                            ? a.ewallet_provider
-                            : a.account_type === "CRYPTO"
-                              ? `${a.crypto_asset} (${a.crypto_network})`
-                              : a.bank_name}
-                        {a.account_type !== "CRYPTO" && a.account_number ? ` · ${a.account_number}` : ""}
-                      </span>
-                    </label>
-                  ))
-                )}
+            <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>Pilih Rekening Tujuan</h3>
+            {accounts === null ? (
+              <span style={{ fontSize: ".8rem", color: "var(--muted)" }}>Memuat rekening…</span>
+            ) : accounts.length === 0 ? (
+              <span style={{ fontSize: ".8rem", color: "var(--danger)" }}>Belum ada rekening aktif. Hubungi admin kost.</span>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {accounts.map((a) => (
+                  <label key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                    <input type="radio" name="advancePaymentAccount" checked={selectedAccountId === a.id} onChange={() => setSelectedAccountId(a.id)} />
+                    <span style={{ fontSize: ".85rem" }}>
+                      {a.account_type === "QRIS"
+                        ? "📱 QRIS"
+                        : a.account_type === "EWALLET"
+                          ? `💳 ${a.ewallet_provider}`
+                          : a.account_type === "CRYPTO"
+                            ? `🪙 ${a.crypto_asset} (${a.crypto_network})`
+                            : `🏦 ${a.bank_name}`}
+                      {a.account_type !== "CRYPTO" && a.account_number ? ` · ${a.account_number}` : ""}
+                    </span>
+                  </label>
+                ))}
               </div>
             )}
           </Card>
@@ -602,40 +575,28 @@ export default function Bayar() {
           )}
 
           <Card style={{ marginBottom: 16 }}>
-            <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>4. Metode Pembayaran</h3>
-            {(["TRANSFER_MANUAL", "QRIS_STATIS"] as Method[]).map((m) => (
-              <label key={m} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", cursor: "pointer" }}>
-                <input type="radio" name="method" checked={method === m} onChange={() => setMethod(m)} />
-                <span style={{ fontSize: ".85rem" }}>
-                  {m === "TRANSFER_MANUAL" && "🏦 Transfer Manual"}
-                  {m === "QRIS_STATIS" && "📱 QRIS"}
-                </span>
-              </label>
-            ))}
-
-            {method === "TRANSFER_MANUAL" && (
-              <div style={{ marginTop: 8, marginLeft: 26, display: "flex", flexDirection: "column", gap: 6 }}>
-                {accounts === null ? (
-                  <span style={{ fontSize: ".8rem", color: "var(--muted)" }}>Memuat rekening…</span>
-                ) : accounts.length === 0 ? (
-                  <span style={{ fontSize: ".8rem", color: "var(--danger)" }}>Belum ada rekening aktif. Hubungi admin kost.</span>
-                ) : (
-                  accounts.map((a) => (
-                    <label key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                      <input type="radio" name="paymentAccount" checked={selectedAccountId === a.id} onChange={() => setSelectedAccountId(a.id)} />
-                      <span style={{ fontSize: ".82rem" }}>
-                        {a.account_type === "QRIS"
-                          ? "QRIS"
-                          : a.account_type === "EWALLET"
-                            ? a.ewallet_provider
-                            : a.account_type === "CRYPTO"
-                              ? `${a.crypto_asset} (${a.crypto_network})`
-                              : a.bank_name}
-                        {a.account_type !== "CRYPTO" && a.account_number ? ` · ${a.account_number}` : ""}
-                      </span>
-                    </label>
-                  ))
-                )}
+            <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>4. Pilih Rekening Tujuan</h3>
+            {accounts === null ? (
+              <span style={{ fontSize: ".8rem", color: "var(--muted)" }}>Memuat rekening…</span>
+            ) : accounts.length === 0 ? (
+              <span style={{ fontSize: ".8rem", color: "var(--danger)" }}>Belum ada rekening aktif. Hubungi admin kost.</span>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {accounts.map((a) => (
+                  <label key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                    <input type="radio" name="paymentAccount" checked={selectedAccountId === a.id} onChange={() => setSelectedAccountId(a.id)} />
+                    <span style={{ fontSize: ".85rem" }}>
+                      {a.account_type === "QRIS"
+                        ? "📱 QRIS"
+                        : a.account_type === "EWALLET"
+                          ? `💳 ${a.ewallet_provider}`
+                          : a.account_type === "CRYPTO"
+                            ? `🪙 ${a.crypto_asset} (${a.crypto_network})`
+                            : `🏦 ${a.bank_name}`}
+                      {a.account_type !== "CRYPTO" && a.account_number ? ` · ${a.account_number}` : ""}
+                    </span>
+                  </label>
+                ))}
               </div>
             )}
             <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, cursor: "pointer" }}>

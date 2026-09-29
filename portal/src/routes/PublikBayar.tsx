@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { functionsUrl } from "../lib/supabaseClient";
 import { formatRupiah } from "../lib/format";
-import { QrisDisplay } from "../components/QrisDisplay";
 import { Countdown } from "../components/Countdown";
 import { PaymentAccountInfo } from "../components/PaymentAccountInfo";
 import type { PaymentAccount } from "../types/database";
@@ -15,8 +14,6 @@ type LinkData = {
   total_to_transfer: number;
   expires_at: string;
   account?: PaymentAccount | null;
-  qris_payload?: string;
-  redirect_url?: string;
 };
 
 const STATUS_MESSAGE: Record<string, string> = {
@@ -87,23 +84,9 @@ export default function PublikBayar() {
                   <Countdown expiresAt={data.expires_at} />
                 </div>
 
-                {data.redirect_url && (
-                  <a className="btn btn-primary" href={data.redirect_url}>
-                    Bayar Sekarang
-                  </a>
-                )}
-
-                {data.qris_payload && (
-                  <div style={{ textAlign: "center", marginBottom: 16 }}>
-                    <QrisDisplay payload={data.qris_payload} />
-                  </div>
-                )}
-
-                {data.method === "TRANSFER_MANUAL" && (
-                  <div style={{ padding: 14, background: "var(--surface2)", borderRadius: 10 }}>
-                    <PaymentAccountInfo account={data.account} />
-                  </div>
-                )}
+                <div style={{ padding: 14, background: "var(--surface2)", borderRadius: 10 }}>
+                  <PaymentAccountInfo account={data.account} />
+                </div>
 
                 <p style={{ fontSize: ".78rem", color: "var(--muted)", marginTop: 16, textAlign: "center" }}>
                   Setelah transfer, penghuni yang bersangkutan perlu upload bukti transfer lewat portalnya.

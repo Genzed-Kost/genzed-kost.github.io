@@ -3,7 +3,6 @@
 // satu-satunya kunci akses, makanya wajib random & sulit ditebak (uuid v4).
 import { getSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
-import { buildQrisPayload } from "../_shared/qris.ts";
 
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
@@ -17,7 +16,7 @@ Deno.serve(async (req) => {
     const { data: payment, error: paymentErr } = await admin
       .from("payments")
       .select(
-        "id, payment_number, method, status, amount, admin_fee, unique_code, deposit_used, voucher_discount, gateway_redirect_url, expires_at, tenant_id, payment_account_id, profiles!payments_tenant_id_fkey(full_name)"
+        "id, payment_number, method, status, amount, admin_fee, unique_code, deposit_used, voucher_discount, expires_at, tenant_id, payment_account_id, profiles!payments_tenant_id_fkey(full_name)"
       )
       .eq("public_link_token", token)
       .maybeSingle();
@@ -40,20 +39,9 @@ Deno.serve(async (req) => {
       expires_at: payment.expires_at,
     };
 
-    if (payment.status === "MENUNGGU") {
-      if (payment.method === "TRANSFER_MANUAL") {
-        if (payment.payment_account_id) {
-          const { data: account } = await admin.from("payment_accounts").select("*").eq("id", payment.payment_account_id).maybeSingle();
-          result.account = account ?? null;
-        }
-      } else if (payment.method === "QRIS_STATIS") {
-        const merchantAccount = Deno.env.get("QRIS_MERCHANT_ACCOUNT");
-        if (merchantAccount) {
-          result.qris_payload = buildQrisPayload({ merchantAccount, amount: grossTotal, referenceCode: payment.payment_number });
-        }
-      } else if (payment.gateway_redirect_url) {
-        result.redirect_url = payment.gateway_redirect_url;
-      }
+    if (payment.status === "MENUNGGU" && payment.payment_account_id) {
+      const { data: account } = await admin.from("payment_accounts").select("*").eq("id", payment.payment_account_id).maybeSingle();
+      result.account = account ?? null;
     }
 
     return jsonResponse({ ok: true, ...result });

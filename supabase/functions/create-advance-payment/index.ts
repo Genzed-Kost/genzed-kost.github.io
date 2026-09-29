@@ -7,16 +7,14 @@
 import { getSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { calculateAdminFee, generateUniqueCode, type FeeConfig } from "../_shared/payment.ts";
-import { buildQrisPayload } from "../_shared/qris.ts";
 import { nextDocumentNumber } from "../_shared/numbering.ts";
+import { sanitizeRoomCode } from "../_shared/roomCode.ts";
 import {
   billingAnchorFromStartDate,
   calculateAdvancePaymentTotal,
   distributeDiscount,
   generateAdvancePeriods,
 } from "../_shared/billing.ts";
-
-type Method = "TRANSFER_MANUAL" | "QRIS_STATIS";
 
 function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
@@ -42,24 +40,19 @@ Deno.serve(async (req) => {
     const {
       tenancy_id,
       months_count,
-      method,
       payment_account_id,
       want_public_link,
       idempotency_key,
     }: {
       tenancy_id: string;
       months_count: number;
-      method: Method;
       payment_account_id?: string;
       want_public_link?: boolean;
       idempotency_key: string;
     } = body;
 
     if (!idempotency_key) return jsonResponse({ error: "idempotency_key wajib diisi." }, 400);
-    if (!["TRANSFER_MANUAL", "QRIS_STATIS"].includes(method)) {
-      return jsonResponse({ error: "Metode pembayaran tidak valid." }, 400);
-    }
-    if (method === "TRANSFER_MANUAL" && !payment_account_id) {
+    if (!payment_account_id) {
       return jsonResponse({ error: "Pilih rekening tujuan transfer dulu." }, 400);
     }
 
@@ -70,7 +63,7 @@ Deno.serve(async (req) => {
 
     const { data: tenancy } = await admin
       .from("tenancies")
-      .select("id, tenant_id, billing_cycle, monthly_rate, start_date, status")
+      .select("id, tenant_id, billing_cycle, monthly_rate, start_date, status, rooms(room_number)")
       .eq("id", tenancy_id)
       .maybeSingle();
     if (!tenancy || tenancy.tenant_id !== tenant.id) return jsonResponse({ error: "Kontrak tidak ditemukan." }, 404);
@@ -117,10 +110,11 @@ Deno.serve(async (req) => {
 
     const now = new Date();
     const monthKey = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+    const roomCode = sanitizeRoomCode((tenancy.rooms as unknown as { room_number: string } | null)?.room_number);
 
     const newInvoiceIds: string[] = [];
     for (let i = 0; i < periods.length; i++) {
-      const invoiceNumber = await nextDocumentNumber(admin, "INV", monthKey);
+      const invoiceNumber = await nextDocumentNumber(admin, "INV", monthKey, roomCode);
       const periodTotal = tenancy.monthly_rate - perPeriodDiscount[i];
 
       const { data: invoice, error: invErr } = await admin
@@ -174,34 +168,22 @@ Deno.serve(async (req) => {
     const expiryHours = Number(expirySetting?.value ?? 24);
     const expiresAt = new Date(now.getTime() + expiryHours * 60 * 60 * 1000);
 
-    const paymentNumber = await nextDocumentNumber(admin, "PAY", monthKey);
+    const paymentNumber = await nextDocumentNumber(admin, "PAY", monthKey, roomCode);
 
-    let dbMethod: string = method;
-    let adminFee = 0;
-    let uniqueCode: number | null = null;
-    let extra: Record<string, unknown> = {};
-
-    adminFee = calculateAdminFee(netTotal, fees.manual);
-    uniqueCode = generateUniqueCode();
+    const adminFee = calculateAdminFee(netTotal, fees.manual);
+    const uniqueCode = generateUniqueCode();
     const grossToTransfer = netTotal + (borneBy === "tenant" ? adminFee : 0) + uniqueCode;
 
-    if (method === "TRANSFER_MANUAL") {
-      const { data: account } = await admin.from("payment_accounts").select("*").eq("id", payment_account_id).eq("is_active", true).maybeSingle();
-      if (!account) return jsonResponse({ error: "Rekening yang dipilih tidak ditemukan atau sudah nonaktif." }, 400);
-      extra = { account, total_to_transfer: grossToTransfer };
-    } else {
-      const merchantAccount = Deno.env.get("QRIS_MERCHANT_ACCOUNT");
-      if (!merchantAccount) return jsonResponse({ error: "QRIS belum dikonfigurasi admin. Pakai transfer manual dulu ya." }, 503);
-      const payload = buildQrisPayload({ merchantAccount, amount: grossToTransfer, referenceCode: paymentNumber });
-      extra = { qris_payload: payload, total_to_transfer: grossToTransfer };
-    }
+    const { data: account } = await admin.from("payment_accounts").select("*").eq("id", payment_account_id).eq("is_active", true).maybeSingle();
+    if (!account) return jsonResponse({ error: "Rekening yang dipilih tidak ditemukan atau sudah nonaktif." }, 400);
+    const extra: Record<string, unknown> = { account, total_to_transfer: grossToTransfer };
 
     const { data: payment, error: payInsertErr } = await admin
       .from("payments")
       .insert({
         payment_number: paymentNumber,
         tenant_id: tenant.id,
-        method: dbMethod,
+        method: "TRANSFER_MANUAL",
         status: "MENUNGGU",
         amount: netTotal,
         admin_fee: adminFee,
@@ -213,7 +195,7 @@ Deno.serve(async (req) => {
         voucher_discount: 0,
         created_by: tenant.id,
         public_link_token: want_public_link ? crypto.randomUUID() : null,
-        payment_account_id: method === "TRANSFER_MANUAL" ? payment_account_id : null,
+        payment_account_id,
       })
       .select("*")
       .single();

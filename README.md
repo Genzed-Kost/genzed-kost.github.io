@@ -9,10 +9,12 @@ Status pembangunan:
 - ✅ **Modul 1 — Autentikasi** (login, aktivasi akun via undangan WhatsApp, lupa password)
 - ✅ **Modul 2 — Dashboard Penghuni** (info kamar, ringkasan tagihan/deposit/voucher, pengingat jatuh tempo H-7/H-3/H-1/H-0, komplain, profil read-only — ubah data lewat komplain kategori "Ubah Data Diri", dokumen)
 - ✅ **Modul 3 — Tagihan** (generate tagihan bulanan otomatis dengan prorata, denda keterlambatan otomatis, halaman rincian tagihan, bayar di muka dengan diskon bertingkat — jenjang diatur admin di Pengaturan)
-- ✅ **Modul 4 — Pembayaran** (manual multi-rekening — bank/QRIS statis/e-wallet, sekaligus otomatis via Midtrans, kombinasi deposit+voucher, link bayar tanpa login, invoice PDF otomatis)
-- ✅ **Modul 5 — Panel Admin** (`/admin`) — verifikasi transfer manual (+ batalkan pembayaran yang salah verifikasi, efeknya otomatis dibalik lewat ledger), kelola rekening pembayaran, kamar/tipe kamar/penghuni/kontrak (+ akhiri kontrak/checkout dengan hitung refund deposit otomatis, + kelola co-tenant/split payment kamar berdua), voucher/denda/pengaturan pembayaran (biaya admin per channel Midtrans), laporan (pemasukan, tunggakan, hunian, rekonsiliasi Midtrans, ekspor Excel `.xlsx`), audit log, balas komplain, login dikunci sementara setelah 5x gagal beruntun
+- ✅ **Modul 4 — Pembayaran** (manual multi-rekening — bank/QRIS statis/e-wallet, kombinasi deposit+voucher, link bayar tanpa login, invoice PDF otomatis)
+- ✅ **Modul 5 — Panel Admin** (`/admin`) — verifikasi transfer manual (+ batalkan pembayaran yang salah verifikasi, efeknya otomatis dibalik lewat ledger), kelola rekening pembayaran, kamar/tipe kamar/penghuni/kontrak (+ akhiri kontrak/checkout dengan hitung refund deposit otomatis, + kelola co-tenant/split payment kamar berdua), voucher/denda/pengaturan pembayaran, laporan (pemasukan, tunggakan, hunian, ekspor Excel `.xlsx`), audit log, balas komplain, login dikunci sementara setelah 5x gagal beruntun
 
-**Semua 5 modul dari brief awal sudah selesai dibangun**, ditambah 3 prioritas lanjutan: bayar di muka dengan diskon, split payment kamar berdua, dan perbaikan keandalan (rekonsiliasi Midtrans, kunci login, biaya per channel, ekspor Excel asli). Lihat [`CHECKLIST.md`](CHECKLIST.md) buat daftar yang perlu dicek/diisi sebelum dipakai penghuni sungguhan (banyak yang udah dites live, tapi beberapa hal — foto, testimoni asli, alamat lengkap, mode Midtrans — sengaja nunggu data asli dari pemilik kost).
+**Semua 5 modul dari brief awal sudah selesai dibangun**, ditambah beberapa prioritas lanjutan: bayar di muka dengan diskon, split payment kamar berdua, dan perbaikan keandalan (kunci login, nomor invoice/pembayaran atomik biar nggak pernah tabrakan). Lihat [`CHECKLIST.md`](CHECKLIST.md) buat daftar yang perlu dicek/diisi sebelum dipakai penghuni sungguhan (banyak yang udah dites live, tapi beberapa hal — foto, testimoni asli, alamat lengkap — sengaja nunggu data asli dari pemilik kost).
+
+**Catatan:** jalur pembayaran otomatis via Midtrans sempat dibangun tapi DIHAPUS lagi (keputusan bisnis — biaya MDR & kerumitan aktivasi channel nggak sepadan buat skala kost ini). Yang tersedia sekarang: Transfer Manual dan QRIS statis (gambar QR sendiri, bukan Midtrans) — keduanya gratis, nggak ada biaya potongan pihak ketiga.
 
 ---
 
@@ -78,7 +80,6 @@ Status pembangunan:
 8. Deploy Edge Functions Modul Pembayaran:
    ```bash
    supabase functions deploy create-payment
-   supabase functions deploy midtrans-webhook
    supabase functions deploy submit-payment-proof
    supabase functions deploy expire-stale-payments
    supabase functions deploy resolve-payment-link
@@ -92,44 +93,18 @@ Status pembangunan:
    ```sql
    select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/expire-stale-payments', 'expire_payments_function_url');
    ```
-9. Setup pembayaran **manual** (selalu aktif, gratis) — bisa lebih dari satu rekening (bank, QRIS gambar statis, e-wallet, kripto). Kelola lewat popup **Admin → Pengaturan → Kelola Rekening** di portal setelah akun admin dibuat (langkah 13): tambah, ubah, aktif/nonaktifkan, urutkan, hapus. Minimal 1 rekening harus aktif sebelum penghuni bisa pakai jalur transfer manual. Migrasi [`20250112000000_payment_accounts.sql`](supabase/migrations/20250112000000_payment_accounts.sql) otomatis mindahin rekening lama (kalau sudah pernah diisi lewat setting `bank_transfer_info`) jadi baris pertama.
+9. Setup pembayaran **manual** (selalu aktif, gratis) — bisa lebih dari satu rekening (bank, QRIS gambar statis, e-wallet, kripto). Kelola lewat popup **Admin → Pengaturan → Kelola Rekening** di portal setelah akun admin dibuat (langkah 11): tambah, ubah, aktif/nonaktifkan, urutkan, hapus. Minimal 1 rekening harus aktif sebelum penghuni bisa pakai jalur transfer manual. Migrasi [`20250112000000_payment_accounts.sql`](supabase/migrations/20250112000000_payment_accounts.sql) otomatis mindahin rekening lama (kalau sudah pernah diisi lewat setting `bank_transfer_info`) jadi baris pertama.
    - (Opsional) Kalau mau QRIS **dinamis** yang otomatis nampilin nominal + kode unik (beda dari QRIS gambar statis di atas — ini generate ulang tiap transaksi), set nomor akun QRIS sebagai secret (JANGAN taruh di kode/migrasi):
      ```bash
      supabase secrets set QRIS_MERCHANT_ACCOUNT=nomor_akun_qris_kost
      ```
-10. Setup pembayaran **otomatis** via Midtrans (opsional, bisa dinyalakan belakangan):
-    - Daftar akun di [midtrans.com](https://midtrans.com) → ambil **Server Key** dari Settings → Access Keys (pakai Sandbox dulu buat coba-coba, produksi kalau udah siap).
-    - Set secrets:
-      ```bash
-      supabase secrets set MIDTRANS_SERVER_KEY=isi_server_key_midtrans
-      supabase secrets set MIDTRANS_IS_PRODUCTION=false
-      ```
-    - Daftarkan URL webhook di Midtrans Dashboard → Settings → Configuration → **Payment Notification URL**:
-      ```
-      https://<project-ref>.supabase.co/functions/v1/midtrans-webhook
-      ```
-    - Nyalakan jalur ini lewat SQL Editor kalau udah siap:
-      ```sql
-      update public.settings set value = 'true' where key = 'payment_gateway_enabled';
-      ```
-    - Biaya admin jalur otomatis diatur **per channel** (VA BCA, VA BNI, GoPay, QRIS, Indomaret, dst — bukan 1 angka rata), lewat **Admin → Pengaturan → Biaya Admin**. Penghuni milih channel spesifik di halaman Bayar sebelum checkout, biar biayanya kelihatan di muka dan Snap cuma nampilin channel itu aja (`enabled_payments`).
-    - ⚠️ **Channel yang bisa dipilih penghuni cuma yang beneran AKTIF di akun Midtrans-nya** (cek Settings → Payment Methods di dashboard Midtrans). Kalau suatu channel belum diaktifkan di sana, Snap bakal nolak nampilin apa-apa ("No payment channels available") walau kodenya udah bener — ini kejadian nyata pas tes Sandbox, khusus QRIS-nya kadang perlu pengaktifan manual tambahan tergantung provisioning akunnya.
-11. Setup rekonsiliasi otomatis Midtrans (opsional, tapi disarankan kalau jalur otomatis aktif) — cek harian status pembayaran gateway kita vs status asli di Midtrans, buat nangkep kasus webhook yang gagal masuk:
-    ```bash
-    supabase functions deploy reconcile-payments --no-verify-jwt
-    ```
-    Tambahkan secret Vault (pakai `reminder_cron_secret` yang sama seperti job lain):
-    ```sql
-    select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/reconcile-payments', 'reconcile_payments_function_url');
-    ```
-    Hasilnya (kalau ada selisih) muncul di **Admin → Laporan → Rekonsiliasi Midtrans**. Sengaja cuma lapor, nggak auto-perbaiki status pembayaran.
-12. (Opsional) Kirim invoice PDF juga lewat email, selain WhatsApp — daftar gratis di [resend.com](https://resend.com):
+10. (Opsional) Kirim invoice PDF juga lewat email, selain WhatsApp — daftar gratis di [resend.com](https://resend.com):
     ```bash
     supabase secrets set RESEND_API_KEY=isi_api_key_resend
     supabase secrets set RESEND_FROM_EMAIL="Genzed Kost <noreply@domainlo.com>"
     ```
     Kalau nggak di-set, email dilewati otomatis (WhatsApp tetap terkirim seperti biasa).
-13. Buat akun admin pertama secara manual (karena penghuni cuma bisa dibuat oleh admin, jadi admin pertama harus dibuat lewat dashboard):
+11. Buat akun admin pertama secara manual (karena penghuni cuma bisa dibuat oleh admin, jadi admin pertama harus dibuat lewat dashboard):
     - Di Supabase dashboard → **Authentication → Users → Add user**, buat 1 user pakai email lo.
     - Di **Table Editor → profiles**, insert 1 row manual: `id` = ID user yang baru dibuat, `role` = `admin`, isi `full_name`, `email`, `phone`.
 
@@ -182,23 +157,15 @@ supabase/
 
 ---
 
-## 6. Mendaftarkan Webhook Midtrans
-
-Sudah dijelaskan di langkah 10 pada bagian **Setup Supabase** di atas — ringkasnya: set `MIDTRANS_SERVER_KEY` sebagai secret, lalu daftarkan `https://<project-ref>.supabase.co/functions/v1/midtrans-webhook` sebagai **Payment Notification URL** di dashboard Midtrans. Setiap perubahan status transaksi (settlement, expire, cancel, dll) otomatis dikirim Midtrans ke URL ini, dan sistem yang verifikasi signature-nya sebelum memproses — jadi nggak ada yang bisa palsuin notifikasi pembayaran.
-
----
-
 ## Catatan Keamanan
 
-- **Tidak ada** service role key, API key WhatsApp, atau server key payment gateway di kode frontend (`portal/`). Semua itu cuma ada di Supabase Edge Functions secrets.
+- **Tidak ada** service role key atau API key WhatsApp di kode frontend (`portal/`). Semua itu cuma ada di Supabase Edge Functions secrets.
 - Semua tabel database punya Row Level Security (RLS) aktif — penghuni cuma bisa lihat data miliknya sendiri, admin bisa lihat semua.
 
 ---
 
 ## Catatan Keterbatasan
 
-- **Sudah dites live berkali-kali** selama pengembangan — bukan cuma `npm run test` (68 unit test buat logika billing/pembayaran), tapi juga tes ujung-ke-ujung langsung ke project Supabase & Midtrans Sandbox asli, plus verifikasi di situs yang sudah di-deploy. Tetap disarankan ulang tes serupa kalau lo fork/pindah ke project Supabase baru, karena environment production lo beda dari yang dipakai testing.
-- **Rekonsiliasi Midtrans** cuma jalan buat pembayaran 30 hari terakhir dan cuma MELAPORKAN selisih (nggak auto-perbaiki status/duit) — admin yang review manual lewat Laporan sebelum ambil tindakan.
-- **Channel Midtrans** (VA, e-wallet, QRIS, retail) cuma bisa dipakai penghuni kalau beneran diaktifkan dulu di dashboard Midtrans-nya — lihat catatan di langkah 10.
+- **Sudah dites live berkali-kali** selama pengembangan — bukan cuma `npm run test` (68 unit test buat logika billing/pembayaran), tapi juga tes ujung-ke-ujung langsung ke project Supabase asli, plus verifikasi di situs yang sudah di-deploy. Tetap disarankan ulang tes serupa kalau lo fork/pindah ke project Supabase baru, karena environment production lo beda dari yang dipakai testing.
 - Belum ada galeri foto kamar & testimoni asli di landing page — sengaja nunggu foto dan testimoni asli dari pemilik kost, bukan isi placeholder/palsu.
-- Admin pertama **harus** dibuat manual lewat Supabase dashboard (langkah 13) — nggak ada cara bikin admin dari dalam aplikasi, ini memang disengaja demi keamanan.
+- Admin pertama **harus** dibuat manual lewat Supabase dashboard (langkah 11) — nggak ada cara bikin admin dari dalam aplikasi, ini memang disengaja demi keamanan.

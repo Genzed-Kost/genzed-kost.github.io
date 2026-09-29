@@ -5,7 +5,6 @@ import { Card, EmptyState, StatCard } from "../../components/Card";
 
 type MonthIncome = { label: string; total: number };
 type Tunggakan = { invoice_number: string; due_date: string; outstanding: number; tenant_name: string };
-type Reconciliation = { id: string; our_status: string; midtrans_status: string; detected_at: string; payment_number: string };
 
 // Lazy-load xlsx (lumayan berat) biar nggak ikut kebawa ke bundle halaman penghuni
 // yang nggak pernah butuh fitur ekspor ini sama sekali.
@@ -27,28 +26,6 @@ export default function Laporan() {
   const [monthlyIncome, setMonthlyIncome] = useState<MonthIncome[] | null>(null);
   const [tunggakan, setTunggakan] = useState<Tunggakan[] | null>(null);
   const [occupancy, setOccupancy] = useState<{ occupied: number; total: number } | null>(null);
-  const [reconciliations, setReconciliations] = useState<Reconciliation[] | null>(null);
-
-  async function loadReconciliations() {
-    const { data } = await supabase
-      .from("payment_reconciliations")
-      .select("id, our_status, midtrans_status, detected_at, payment:payments(payment_number)")
-      .order("detected_at", { ascending: false });
-    setReconciliations(
-      (data ?? []).map((r) => ({
-        id: r.id,
-        our_status: r.our_status,
-        midtrans_status: r.midtrans_status,
-        detected_at: r.detected_at,
-        payment_number: (r.payment as unknown as { payment_number: string } | null)?.payment_number ?? "-",
-      }))
-    );
-  }
-
-  async function handleDismissReconciliation(id: string) {
-    await supabase.from("payment_reconciliations").delete().eq("id", id);
-    setReconciliations((prev) => (prev ?? []).filter((r) => r.id !== id));
-  }
 
   useEffect(() => {
     async function load() {
@@ -99,7 +76,6 @@ export default function Laporan() {
       setOccupancy({ occupied: occupiedRooms, total: totalRooms });
     }
     load();
-    loadReconciliations();
   }, []);
 
   const maxIncome = Math.max(1, ...(monthlyIncome ?? []).map((m) => m.total));
@@ -159,38 +135,6 @@ export default function Laporan() {
                   {t.tenant_name} — {t.invoice_number}
                 </span>
                 <span style={{ fontWeight: 700, color: "var(--danger)" }}>{formatRupiah(t.outstanding)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-
-      <Card style={{ marginTop: 24 }}>
-        <h3 style={{ fontSize: ".95rem", marginBottom: 6 }}>Rekonsiliasi Midtrans</h3>
-        <p style={{ fontSize: ".78rem", color: "var(--muted)", marginBottom: 16 }}>
-          Selisih antara status pembayaran di sistem kita vs status asli di Midtrans, dicek otomatis tiap hari. Biasanya artinya notifikasi
-          webhook gagal masuk — cek manual transaksinya di dashboard Midtrans sebelum diperbaiki.
-        </p>
-        {reconciliations === null ? (
-          <div className="spinner" style={{ borderTopColor: "var(--accent)", borderColor: "var(--border)" }} />
-        ) : reconciliations.length === 0 ? (
-          <EmptyState icon="✅" text="Nggak ada selisih. Semua status pembayaran gateway cocok." />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {reconciliations.map((r) => (
-              <div
-                key={r.id}
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: ".85rem", padding: "8px 0", borderBottom: "1px solid var(--border)" }}
-              >
-                <div>
-                  <div style={{ fontWeight: 700 }}>{r.payment_number}</div>
-                  <div style={{ fontSize: ".78rem", color: "var(--muted)" }}>
-                    Sistem kita: <strong>{r.our_status}</strong> · Midtrans: <strong>{r.midtrans_status}</strong>
-                  </div>
-                </div>
-                <button className="btn-link" onClick={() => handleDismissReconciliation(r.id)}>
-                  Tandai Sudah Dicek
-                </button>
               </div>
             ))}
           </div>

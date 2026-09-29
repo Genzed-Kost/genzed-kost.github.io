@@ -1,9 +1,8 @@
 // Satu-satunya tempat yang boleh "menyelesaikan" pembayaran: pindahkan status
 // payment jadi LUNAS, terapkan ke saldo tagihan, kurangi deposit, tandai voucher
-// terpakai, dan catat semuanya di ledger. Dipanggil dari 3 tempat:
+// terpakai, dan catat semuanya di ledger. Dipanggil dari:
 //   1. create-payment  — kalau deposit+voucher sudah nutup semua (tanpa perlu bayar eksternal)
-//   2. midtrans-webhook — begitu Midtrans konfirmasi settlement
-//   3. (Modul 5) admin menyetujui bukti transfer manual
+//   2. (Modul 5) admin menyetujui bukti transfer manual
 //
 // Pakai "optimistic lock" (update .eq('status','MENUNGGU')) supaya kalau dipanggil
 // dobel (mis. webhook retry) tidak diproses dua kali.

@@ -4,12 +4,11 @@
 import { getSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { allocatePayment, calculateAdminFee, checkAndCalculateVoucher, generateUniqueCode, type FeeConfig } from "../_shared/payment.ts";
-import { createGatewayTransaction } from "../_shared/midtrans.ts";
 import { buildQrisPayload } from "../_shared/qris.ts";
 import { confirmPayment } from "../_shared/confirmPayment.ts";
-import { isGatewayChannelId } from "../_shared/paymentChannels.ts";
+import { nextDocumentNumber } from "../_shared/numbering.ts";
 
-type Method = "TRANSFER_MANUAL" | "QRIS_STATIS" | "GATEWAY";
+type Method = "TRANSFER_MANUAL" | "QRIS_STATIS";
 
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
@@ -37,7 +36,6 @@ Deno.serve(async (req) => {
       voucher_code,
       method,
       payment_account_id,
-      gateway_channel,
       want_public_link,
       idempotency_key,
     }: {
@@ -48,20 +46,16 @@ Deno.serve(async (req) => {
       voucher_code?: string;
       method: Method;
       payment_account_id?: string;
-      gateway_channel?: string;
       want_public_link?: boolean;
       idempotency_key: string;
     } = body;
 
     if (!idempotency_key) return jsonResponse({ error: "idempotency_key wajib diisi." }, 400);
-    if (!["TRANSFER_MANUAL", "QRIS_STATIS", "GATEWAY"].includes(method)) {
+    if (!["TRANSFER_MANUAL", "QRIS_STATIS"].includes(method)) {
       return jsonResponse({ error: "Metode pembayaran tidak valid." }, 400);
     }
     if (method === "TRANSFER_MANUAL" && !payment_account_id) {
       return jsonResponse({ error: "Pilih rekening tujuan transfer dulu." }, 400);
-    }
-    if (method === "GATEWAY" && !isGatewayChannelId(gateway_channel)) {
-      return jsonResponse({ error: "Pilih channel pembayaran otomatis dulu (VA/e-wallet/QRIS/retail)." }, 400);
     }
 
     // Idempotency: kalau request ini pernah diproses, balikin hasil yang sama, jangan bikin baru.
@@ -187,13 +181,9 @@ Deno.serve(async (req) => {
     const expiresAt = new Date(now.getTime() + expiryHours * 60 * 60 * 1000);
 
     const monthKey = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-    const { count: paymentCount } = await admin
-      .from("payments")
-      .select("id", { count: "exact", head: true })
-      .like("payment_number", `PAY-${monthKey}-%`);
-    const paymentNumber = `PAY-${monthKey}-${String((paymentCount ?? 0) + 1).padStart(4, "0")}`;
+    const paymentNumber = await nextDocumentNumber(admin, "PAY", monthKey);
 
-    let dbMethod: string = method === "GATEWAY" ? "VIRTUAL_ACCOUNT" : method; // dikoreksi setelah webhook Midtrans
+    let dbMethod: string = method;
     let adminFee = 0;
     let uniqueCode: number | null = null;
     let extra: Record<string, unknown> = {};
@@ -202,7 +192,7 @@ Deno.serve(async (req) => {
     if (amountToPayExternally <= 0) {
       // Deposit + voucher udah nutup semua, nggak butuh transfer eksternal sama sekali.
       dbMethod = depositUsed > 0 ? "SALDO_DEPOSIT" : "VOUCHER";
-    } else if (method === "TRANSFER_MANUAL" || method === "QRIS_STATIS") {
+    } else {
       adminFee = calculateAdminFee(amountToPayExternally, fees.manual);
       uniqueCode = generateUniqueCode();
       const grossToTransfer = amountToPayExternally + (borneBy === "tenant" ? adminFee : 0) + uniqueCode;
@@ -225,32 +215,6 @@ Deno.serve(async (req) => {
         const payload = buildQrisPayload({ merchantAccount, amount: grossToTransfer, referenceCode: paymentNumber });
         extra = { qris_payload: payload, total_to_transfer: grossToTransfer };
       }
-    } else {
-      // GATEWAY
-      const { data: gatewayEnabled } = await admin.from("settings").select("value").eq("key", "payment_gateway_enabled").maybeSingle();
-      if (gatewayEnabled?.value !== true) {
-        return jsonResponse({ error: "Pembayaran otomatis lagi nggak aktif. Pakai transfer manual dulu ya." }, 503);
-      }
-      const channelFees = (fees.gateway_channels ?? {}) as Record<string, FeeConfig>;
-      adminFee = calculateAdminFee(amountToPayExternally, channelFees[gateway_channel!]);
-      const grossCharge = amountToPayExternally + (borneBy === "tenant" ? adminFee : 0);
-
-      const itemName =
-        invoices.length === 1
-          ? `Tagihan Kost ${invoices[0].invoice_number}`
-          : `Tagihan Kost (${invoices.length} tagihan)`;
-
-      const gateway = await createGatewayTransaction({
-        orderId: paymentNumber,
-        grossAmount: grossCharge,
-        itemName,
-        customerName: tenant.full_name,
-        customerEmail: tenant.email,
-        customerPhone: tenant.phone,
-        expiryHours,
-        enabledPayments: [gateway_channel!],
-      });
-      extra = { redirect_url: gateway.redirectUrl, snap_token: gateway.token };
     }
 
     const { data: payment, error: payInsertErr } = await admin
@@ -263,8 +227,6 @@ Deno.serve(async (req) => {
         amount: transactionAmount,
         admin_fee: adminFee,
         unique_code: uniqueCode,
-        gateway_provider: method === "GATEWAY" ? "midtrans" : null,
-        gateway_redirect_url: (extra as { redirect_url?: string }).redirect_url ?? null,
         idempotency_key,
         expires_at: expiresAt.toISOString(),
         deposit_used: depositUsed,

@@ -4,16 +4,15 @@ import { useAuth } from "../../context/AuthContext";
 import { supabase, functionsUrl } from "../../lib/supabaseClient";
 import { loadMyInvoices } from "../../lib/invoices";
 import { formatRupiah } from "../../lib/format";
-import { checkAndCalculateVoucher, type FeeConfig } from "../../lib/payment";
+import { checkAndCalculateVoucher } from "../../lib/payment";
 import { Card, EmptyState } from "../../components/Card";
 import { QrisDisplay } from "../../components/QrisDisplay";
 import { Countdown } from "../../components/Countdown";
 import { PaymentAccountInfo } from "../../components/PaymentAccountInfo";
-import { GatewayChannelPicker } from "../../components/GatewayChannelPicker";
 import type { PaymentAccount } from "../../types/database";
 
 type OutstandingInvoice = { id: string; invoice_number: string; due_date: string; total: number; paid_total: number; isShared: boolean };
-type Method = "TRANSFER_MANUAL" | "QRIS_STATIS" | "GATEWAY";
+type Method = "TRANSFER_MANUAL" | "QRIS_STATIS";
 type DiscountTier = { months: number; discount_percent: number };
 type ActiveTenancy = { id: string; billing_cycle: string; monthly_rate: number };
 
@@ -43,9 +42,6 @@ export default function Bayar() {
   const [method, setMethod] = useState<Method>("TRANSFER_MANUAL");
   const [accounts, setAccounts] = useState<PaymentAccount[] | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
-  const [gatewayChannel, setGatewayChannel] = useState<string | null>(null);
-  const [gatewayFees, setGatewayFees] = useState<Record<string, FeeConfig>>({});
-  const [tenantBearsFee, setTenantBearsFee] = useState(true);
   const [wantPublicLink, setWantPublicLink] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,16 +115,6 @@ export default function Bayar() {
         const tiers = ((data?.value ?? []) as DiscountTier[]).slice().sort((a, b) => a.months - b.months);
         setDiscountTiers(tiers);
         if (tiers.length > 0) setAdvanceMonths(tiers[0].months);
-      });
-    supabase
-      .from("settings")
-      .select("key, value")
-      .in("key", ["payment_method_fees", "admin_fee_borne_by"])
-      .then(({ data }) => {
-        const map = new Map((data ?? []).map((r) => [r.key, r.value]));
-        const fees = map.get("payment_method_fees") as { gateway_channels?: Record<string, FeeConfig> } | undefined;
-        setGatewayFees(fees?.gateway_channels ?? {});
-        setTenantBearsFee((map.get("admin_fee_borne_by") as string | undefined) !== "pemilik");
       });
   }, [profile]);
 
@@ -219,10 +205,6 @@ export default function Bayar() {
       setError("Pilih rekening tujuan transfer dulu.");
       return;
     }
-    if (method === "GATEWAY" && !gatewayChannel) {
-      setError("Pilih channel pembayaran otomatis dulu (VA/e-wallet/QRIS/retail).");
-      return;
-    }
     const isSharedPayment = selectedInvoices.some((i) => i.isShared);
     setSubmitting(true);
     try {
@@ -238,7 +220,6 @@ export default function Bayar() {
                 invoice_id: selectedInvoices[0].id,
                 method,
                 payment_account_id: method === "TRANSFER_MANUAL" ? selectedAccountId : undefined,
-                gateway_channel: method === "GATEWAY" ? gatewayChannel : undefined,
                 want_public_link: wantPublicLink,
                 idempotency_key: crypto.randomUUID(),
               }
@@ -249,7 +230,6 @@ export default function Bayar() {
                 voucher_code: voucherStatus?.valid ? voucherCode.trim() : undefined,
                 method,
                 payment_account_id: method === "TRANSFER_MANUAL" ? selectedAccountId : undefined,
-                gateway_channel: method === "GATEWAY" ? gatewayChannel : undefined,
                 want_public_link: wantPublicLink,
                 idempotency_key: crypto.randomUUID(),
               }
@@ -263,11 +243,6 @@ export default function Bayar() {
 
       if (data.payment.status === "LUNAS") {
         navigate("/penghuni/riwayat-bayar", { state: { justPaid: true } });
-        return;
-      }
-
-      if (method === "GATEWAY" && data.redirect_url) {
-        window.location.href = data.redirect_url;
         return;
       }
 
@@ -292,10 +267,6 @@ export default function Bayar() {
       setError("Pilih rekening tujuan transfer dulu.");
       return;
     }
-    if (method === "GATEWAY" && !gatewayChannel) {
-      setError("Pilih channel pembayaran otomatis dulu (VA/e-wallet/QRIS/retail).");
-      return;
-    }
     setAdvanceSubmitting(true);
     try {
       const {
@@ -309,7 +280,6 @@ export default function Bayar() {
           months_count: selectedTier.months,
           method,
           payment_account_id: method === "TRANSFER_MANUAL" ? selectedAccountId : undefined,
-          gateway_channel: method === "GATEWAY" ? gatewayChannel : undefined,
           want_public_link: wantPublicLink,
           idempotency_key: crypto.randomUUID(),
         }),
@@ -317,11 +287,6 @@ export default function Bayar() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Gagal membuat pembayaran di muka. Coba lagi ya.");
-        return;
-      }
-
-      if (method === "GATEWAY" && data.redirect_url) {
-        window.location.href = data.redirect_url;
         return;
       }
 
@@ -489,13 +454,12 @@ export default function Bayar() {
 
           <Card style={{ marginBottom: 16 }}>
             <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>Metode Pembayaran</h3>
-            {(["TRANSFER_MANUAL", "QRIS_STATIS", "GATEWAY"] as Method[]).map((m) => (
+            {(["TRANSFER_MANUAL", "QRIS_STATIS"] as Method[]).map((m) => (
               <label key={m} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", cursor: "pointer" }}>
                 <input type="radio" name="advanceMethod" checked={method === m} onChange={() => setMethod(m)} />
                 <span style={{ fontSize: ".85rem" }}>
                   {m === "TRANSFER_MANUAL" && "🏦 Transfer Manual"}
                   {m === "QRIS_STATIS" && "📱 QRIS"}
-                  {m === "GATEWAY" && "⚡ Otomatis (VA/E-wallet/Retail via Midtrans)"}
                 </span>
               </label>
             ))}
@@ -523,15 +487,6 @@ export default function Bayar() {
                   ))
                 )}
               </div>
-            )}
-            {method === "GATEWAY" && (
-              <GatewayChannelPicker
-                fees={gatewayFees}
-                baseAmount={advanceTotal}
-                tenantBearsFee={tenantBearsFee}
-                selected={gatewayChannel}
-                onSelect={setGatewayChannel}
-              />
             )}
           </Card>
 
@@ -648,13 +603,12 @@ export default function Bayar() {
 
           <Card style={{ marginBottom: 16 }}>
             <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>4. Metode Pembayaran</h3>
-            {(["TRANSFER_MANUAL", "QRIS_STATIS", "GATEWAY"] as Method[]).map((m) => (
+            {(["TRANSFER_MANUAL", "QRIS_STATIS"] as Method[]).map((m) => (
               <label key={m} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", cursor: "pointer" }}>
                 <input type="radio" name="method" checked={method === m} onChange={() => setMethod(m)} />
                 <span style={{ fontSize: ".85rem" }}>
                   {m === "TRANSFER_MANUAL" && "🏦 Transfer Manual"}
                   {m === "QRIS_STATIS" && "📱 QRIS"}
-                  {m === "GATEWAY" && "⚡ Otomatis (VA/E-wallet/Retail via Midtrans)"}
                 </span>
               </label>
             ))}
@@ -683,15 +637,6 @@ export default function Bayar() {
                   ))
                 )}
               </div>
-            )}
-            {method === "GATEWAY" && (
-              <GatewayChannelPicker
-                fees={gatewayFees}
-                baseAmount={amountToPay}
-                tenantBearsFee={tenantBearsFee}
-                selected={gatewayChannel}
-                onSelect={setGatewayChannel}
-              />
             )}
             <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, cursor: "pointer" }}>
               <input type="checkbox" checked={wantPublicLink} onChange={(e) => setWantPublicLink(e.target.checked)} />

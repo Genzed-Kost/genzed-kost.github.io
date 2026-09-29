@@ -11,13 +11,13 @@
 import { getSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { sendWhatsApp } from "../_shared/whatsapp.ts";
 import { jsonResponse } from "../_shared/cors.ts";
+import { nextDocumentNumber } from "../_shared/numbering.ts";
 import {
   billingAnchorFromStartDate,
   calculateFirstPeriodSewaAmount,
   calculateSewaAmount,
   cycleMonths,
   firstAnchoredPeriodEnd,
-  formatInvoiceNumber,
   invoicePublishDate,
   nextAnchoredPeriodEnd,
   splitBySharePercent,
@@ -119,11 +119,7 @@ Deno.serve(async (req) => {
       }
 
       const monthKey = `${today.getUTCFullYear()}${String(today.getUTCMonth() + 1).padStart(2, "0")}`;
-      const { count } = await admin
-        .from("invoices")
-        .select("id", { count: "exact", head: true })
-        .like("invoice_number", `INV-${monthKey}-%`);
-      const invoiceNumber = formatInvoiceNumber(today, (count ?? 0) + 1);
+      const invoiceNumber = await nextDocumentNumber(admin, "INV", monthKey);
 
       const dueDate = toDateOnlyString(addDays(periodStart, dueDays));
       const room = tenancy.rooms as unknown as { room_number: string; room_types: { name: string } } | null;

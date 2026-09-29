@@ -1,6 +1,6 @@
 // Admin menyetujui atau menolak bukti transfer manual. Persetujuan lewat
-// confirmPayment.ts (sama seperti webhook Midtrans) supaya jalur pelunasan
-// SELALU lewat satu pintu, konsisten untuk semua metode pembayaran.
+// confirmPayment.ts supaya jalur pelunasan SELALU lewat satu pintu, konsisten
+// untuk semua metode pembayaran.
 import { getSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { confirmPayment } from "../_shared/confirmPayment.ts";

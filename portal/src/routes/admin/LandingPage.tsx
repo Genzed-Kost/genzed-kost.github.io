@@ -225,7 +225,7 @@ export default function LandingPageSettings() {
         <h3 style={{ fontSize: ".95rem", marginBottom: 12 }}>Statistik Hero</h3>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
           <div className="field">
-            <label>Penghuni Aktif</label>
+            <label>Penghuni Kamar Kost</label>
             <input value={stats.penghuni_aktif} onChange={(e) => setStats((s) => ({ ...s, penghuni_aktif: e.target.value }))} placeholder="120+" />
           </div>
           <div className="field">

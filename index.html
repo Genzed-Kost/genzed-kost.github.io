@@ -443,20 +443,11 @@ section { padding: clamp(64px, 10vw, 96px) 5vw; }
 
 /* ===== FITUR ===== */
 #fitur { background: var(--surface); }
-.fitur-grid {
-  display: grid; grid-template-columns: repeat(3,1fr); gap: 18px;
-  margin-top: clamp(32px,5vw,52px);
-}
 .fitur-card {
   background: var(--bg); border: 1px solid var(--border);
   border-radius: 20px; overflow: hidden;
-  transition: border-color .3s, transform .3s var(--ease-out), box-shadow .3s;
-  will-change: transform;
 }
-.fitur-card:hover {
-  border-color: var(--border-h); transform: translateY(-6px);
-  box-shadow: 0 20px 48px rgba(200,240,75,.07);
-}
+.fitur-card.is-active { border-color: var(--border-h); }
 .fitur-card-img {
   width: 100%; aspect-ratio: 4/3;
   background: linear-gradient(135deg, #1C1C1C, #232323);
@@ -520,36 +511,38 @@ section { padding: clamp(64px, 10vw, 96px) 5vw; }
 .upgrade-cta-accent { color: var(--accent); font-weight: 600; font-size: .95rem; margin-bottom: 22px; }
 .upgrade-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
-/* ===== FASILITAS (slider) ===== */
-#fasilitas { background: var(--surface); }
-.facilities-carousel-wrap { margin-top: clamp(28px,4vw,40px); }
-.facilities-nav-row { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 18px; }
-.facilities-nav {
-  width: 44px; height: 44px; border-radius: 50%;
-  background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text); font-size: 1.05rem; cursor: pointer; font-family: inherit;
-  display: flex; align-items: center; justify-content: center;
-  transition: border-color .2s, transform .15s var(--ease-out), opacity .2s;
-}
-.facilities-nav:hover { border-color: var(--border-h); transform: scale(1.06); }
-.facilities-nav:disabled { opacity: .32; cursor: default; transform: none; }
-.facilities-grid {
+/* ===== CARD CAROUSEL (dipakai Fasilitas & Keunggulan Kami) ===== */
+.card-carousel-wrap { margin-top: clamp(28px,4vw,40px); }
+.card-carousel {
   --card-w: min(82vw, 320px);
-  display: flex; gap: 16px; align-items: center;
+  display: flex; gap: 16px; align-items: stretch;
   overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
   padding: 10px calc(50% - (var(--card-w) / 2)) 16px;
   -ms-overflow-style: none; scrollbar-width: none;
 }
-.facilities-grid::-webkit-scrollbar { display: none; }
-.facility-item {
+.card-carousel::-webkit-scrollbar { display: none; }
+.card-carousel > * {
   flex: 0 0 auto; width: var(--card-w); scroll-snap-align: center;
-  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r);
-  padding: 30px 26px;
-  display: flex; flex-direction: column; align-items: flex-start;
   opacity: .4; transform: scale(.88);
   transition: border-color .3s, opacity .4s var(--ease-out), transform .4s var(--ease-out);
 }
-.facility-item.is-active { opacity: 1; transform: scale(1); border-color: var(--border-h); }
+.card-carousel > *.is-active { opacity: 1; transform: scale(1); }
+.carousel-dots { display: flex; justify-content: center; gap: 8px; margin-top: 18px; }
+.carousel-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border); border: none; padding: 0; cursor: pointer; font-size: 0;
+  transition: background .25s, width .25s;
+}
+.carousel-dot.is-active { background: var(--accent); width: 22px; border-radius: 100px; }
+
+/* ===== FASILITAS ===== */
+#fasilitas { background: var(--surface); }
+.facility-item {
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 30px 26px;
+  display: flex; flex-direction: column; align-items: flex-start;
+}
+.facility-item.is-active { border-color: var(--border-h); }
 .fac-icon {
   width: 56px; height: 56px;
   background: rgba(200,240,75,.1); border: 1px solid rgba(200,240,75,.22);
@@ -841,9 +834,7 @@ footer {
 /* ===== RESPONSIVE ===== */
 /* Tablet */
 @media (max-width: 1024px) {
-  .facilities-grid { grid-template-columns: repeat(2,1fr); }
   .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
-  .fitur-grid { grid-template-columns: repeat(2,1fr); }
 }
 
 /* Mobile large */
@@ -878,11 +869,9 @@ footer {
 
 /* Mobile small */
 @media (max-width: 480px) {
-  .fitur-grid { grid-template-columns: 1fr; }
   .hero-stats { flex-wrap: wrap; gap: 16px; justify-content: center; }
   .hero-stats .stat-item { flex: 1; min-width: 100px; text-align: center; }
   .payment-info { flex-direction: column; align-items: flex-start; }
-  .facilities-grid { grid-template-columns: 1fr; }
 }
 
 /* Reduced motion */
@@ -1104,49 +1093,52 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
     </div>
     <p class="section-sub">Semua yang lo butuhin dalam satu tempat. No drama, pure comfort.</p>
   </div>
-  <div class="fitur-grid" id="fiturGrid">
-    <div class="fitur-card reveal reveal-delay-1">
-      <div class="fitur-card-img">🛏️</div>
-      <div class="fitur-card-body">
-        <div class="fitur-card-title">Luas</div>
-        <div class="fitur-card-desc">Kamar spacious yang bikin lo bebas ekspresiin diri. Cukup buat semua setup lo.</div>
+  <div class="card-carousel-wrap">
+    <div class="card-carousel" id="fiturGrid">
+      <div class="fitur-card">
+        <div class="fitur-card-img">🛏️</div>
+        <div class="fitur-card-body">
+          <div class="fitur-card-title">Luas</div>
+          <div class="fitur-card-desc">Kamar spacious yang bikin lo bebas ekspresiin diri. Cukup buat semua setup lo.</div>
+        </div>
+      </div>
+      <div class="fitur-card">
+        <div class="fitur-card-img">🪴</div>
+        <div class="fitur-card-body">
+          <div class="fitur-card-title">Sederhana</div>
+          <div class="fitur-card-desc">Desain clean & minimalis. Less clutter, more focus. Vibe yang bikin produktif.</div>
+        </div>
+      </div>
+      <div class="fitur-card">
+        <div class="fitur-card-img">📶</div>
+        <div class="fitur-card-body">
+          <div class="fitur-card-title">WiFi up to 150 Mbps</div>
+          <div class="fitur-card-desc">Koneksi fiber optik stabil 24 jam. Streaming, gaming, WFH — semua lancar jaya.</div>
+        </div>
+      </div>
+      <div class="fitur-card">
+        <div class="fitur-card-img">🌅</div>
+        <div class="fitur-card-body">
+          <div class="fitur-card-title">Friendly Rooftop</div>
+          <div class="fitur-card-desc">Area rooftop buat nongkrong, sunset vibes, atau sekadar cari udara segar.</div>
+        </div>
+      </div>
+      <div class="fitur-card">
+        <div class="fitur-card-img">📍</div>
+        <div class="fitur-card-body">
+          <div class="fitur-card-title">Strategis</div>
+          <div class="fitur-card-desc">Dekat kampus, kantor, transportasi publik & pusat kuliner. Lo hemat waktu setiap hari.</div>
+        </div>
+      </div>
+      <div class="fitur-card">
+        <div class="fitur-card-img">✨</div>
+        <div class="fitur-card-body">
+          <div class="fitur-card-title">Modern</div>
+          <div class="fitur-card-desc">Fasilitas terus di-upgrade. Kami nggak stuck — terus berinovasi buat lo.</div>
+        </div>
       </div>
     </div>
-    <div class="fitur-card reveal reveal-delay-2">
-      <div class="fitur-card-img">🪴</div>
-      <div class="fitur-card-body">
-        <div class="fitur-card-title">Sederhana</div>
-        <div class="fitur-card-desc">Desain clean & minimalis. Less clutter, more focus. Vibe yang bikin produktif.</div>
-      </div>
-    </div>
-    <div class="fitur-card reveal reveal-delay-3">
-      <div class="fitur-card-img">📶</div>
-      <div class="fitur-card-body">
-        <div class="fitur-card-title">WiFi up to 150 Mbps</div>
-        <div class="fitur-card-desc">Koneksi fiber optik stabil 24 jam. Streaming, gaming, WFH — semua lancar jaya.</div>
-      </div>
-    </div>
-    <div class="fitur-card reveal reveal-delay-1">
-      <div class="fitur-card-img">🌅</div>
-      <div class="fitur-card-body">
-        <div class="fitur-card-title">Friendly Rooftop</div>
-        <div class="fitur-card-desc">Area rooftop buat nongkrong, sunset vibes, atau sekadar cari udara segar.</div>
-      </div>
-    </div>
-    <div class="fitur-card reveal reveal-delay-2">
-      <div class="fitur-card-img">📍</div>
-      <div class="fitur-card-body">
-        <div class="fitur-card-title">Strategis</div>
-        <div class="fitur-card-desc">Dekat kampus, kantor, transportasi publik & pusat kuliner. Lo hemat waktu setiap hari.</div>
-      </div>
-    </div>
-    <div class="fitur-card reveal reveal-delay-3">
-      <div class="fitur-card-img">✨</div>
-      <div class="fitur-card-body">
-        <div class="fitur-card-title">Modern</div>
-        <div class="fitur-card-desc">Fasilitas terus di-upgrade. Kami nggak stuck — terus berinovasi buat lo.</div>
-      </div>
-    </div>
+    <div class="carousel-dots" id="fiturDots"></div>
   </div>
 </section>
 
@@ -1193,12 +1185,8 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
     </div>
     <p class="section-sub">Setiap fasilitas dirancang agar lo bisa fokus hal yang paling penting.</p>
   </div>
-  <div class="facilities-carousel-wrap">
-    <div class="facilities-nav-row">
-      <button type="button" class="facilities-nav" id="facilitiesPrev" aria-label="Fasilitas sebelumnya">←</button>
-      <button type="button" class="facilities-nav" id="facilitiesNext" aria-label="Fasilitas selanjutnya">→</button>
-    </div>
-    <div class="facilities-grid" id="facilitiesGrid">
+  <div class="card-carousel-wrap">
+    <div class="card-carousel" id="facilitiesGrid">
       <div class="facility-item"><div class="fac-icon c-blue">🌐</div><div class="fac-title">WiFi Super Cepat</div><div class="fac-desc">Fiber optik 150 Mbps stabil 24 jam.</div></div>
       <div class="facility-item"><div class="fac-icon c-cyan">❄️</div><div class="fac-title">AC di Setiap Kamar</div><div class="fac-desc">AC inverter hemat energi tiap kamar.</div></div>
       <div class="facility-item"><div class="fac-icon c-teal">🚿</div><div class="fac-title">Kamar Mandi Dalam</div><div class="fac-desc">Privat, bersih, dengan water heater.</div></div>
@@ -1207,6 +1195,7 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
       <div class="facility-item"><div class="fac-icon c-amber">🍳</div><div class="fac-title">Dapur Bersama</div><div class="fac-desc">Bersih, lengkap, kulkas & peralatan masak.</div></div>
       <div class="facility-item"><div class="fac-icon c-purple">🅿️</div><div class="fac-title">Parkir Aman</div><div class="fac-desc">Area parkir motor luas untuk penghuni.</div></div>
     </div>
+    <div class="carousel-dots" id="facilitiesDots"></div>
   </div>
 </section>
 
@@ -1471,58 +1460,59 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
     }
   });
 
-  /* ── Fasilitas slider ── */
-  (function () {
-    const track = document.getElementById('facilitiesGrid');
-    const prevBtn = document.getElementById('facilitiesPrev');
-    const nextBtn = document.getElementById('facilitiesNext');
-    if (!track || !prevBtn || !nextBtn) return;
+  /* ── Card carousel (Fasilitas & Keunggulan Kami) ── */
+  function initCardCarousel(trackId, cardSelector, dotsId) {
+    const track = document.getElementById(trackId);
+    const dotsWrap = document.getElementById(dotsId);
+    if (!track || !dotsWrap) return null;
 
-    function cardStep() {
-      const card = track.querySelector('.facility-item');
-      if (!card) return 280;
-      const gap = parseFloat(getComputedStyle(track).columnGap || '16');
-      return card.getBoundingClientRect().width + gap;
-    }
-    function updateNavState() {
-      const max = track.scrollWidth - track.clientWidth - 2;
-      prevBtn.disabled = track.scrollLeft <= 2;
-      nextBtn.disabled = max <= 2 || track.scrollLeft >= max;
-    }
-    function updateActiveCard() {
-      const cards = track.querySelectorAll('.facility-item');
-      if (!cards.length) return;
+    function cards() { return [...track.querySelectorAll(cardSelector)]; }
+
+    function activeIndex() {
+      const list = cards();
+      if (!list.length) return 0;
       const trackRect = track.getBoundingClientRect();
       const centerX = trackRect.left + trackRect.width / 2;
-      let closest = null, closestDist = Infinity;
-      cards.forEach(card => {
+      let closest = 0, closestDist = Infinity;
+      list.forEach((card, i) => {
         const r = card.getBoundingClientRect();
         const dist = Math.abs((r.left + r.width / 2) - centerX);
-        if (dist < closestDist) { closestDist = dist; closest = card; }
+        if (dist < closestDist) { closestDist = dist; closest = i; }
       });
-      cards.forEach(c => c.classList.toggle('is-active', c === closest));
+      return closest;
     }
-    let scrollTicking = false;
-    function onTrackScroll() {
-      if (scrollTicking) return;
-      scrollTicking = true;
-      requestAnimationFrame(() => {
-        updateNavState();
-        updateActiveCard();
-        scrollTicking = false;
+    function renderDots() {
+      const list = cards();
+      dotsWrap.innerHTML = list.map((_, i) => `<button type="button" class="carousel-dot" data-i="${i}" aria-label="Ke slide ${i + 1}"></button>`).join('');
+      dotsWrap.querySelectorAll('.carousel-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+          const target = cards()[Number(dot.dataset.i)];
+          if (target) target.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+        });
       });
     }
-    function refreshFacilitiesCarousel() {
-      updateNavState();
-      updateActiveCard();
+    function updateState() {
+      const active = activeIndex();
+      cards().forEach((c, i) => c.classList.toggle('is-active', i === active));
+      dotsWrap.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('is-active', i === active));
     }
-    prevBtn.addEventListener('click', () => track.scrollBy({ left: -cardStep(), behavior: 'smooth' }));
-    nextBtn.addEventListener('click', () => track.scrollBy({ left: cardStep(), behavior: 'smooth' }));
-    track.addEventListener('scroll', onTrackScroll, { passive: true });
-    window.addEventListener('resize', refreshFacilitiesCarousel);
-    refreshFacilitiesCarousel();
-    window.__refreshFacilitiesNav = refreshFacilitiesCarousel;
-  })();
+    function refresh() {
+      renderDots();
+      updateState();
+    }
+    let ticking = false;
+    track.addEventListener('scroll', () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => { updateState(); ticking = false; });
+    }, { passive: true });
+    window.addEventListener('resize', refresh);
+    refresh();
+    return refresh;
+  }
+
+  window.__refreshFacilitiesCarousel = initCardCarousel('facilitiesGrid', '.facility-item', 'facilitiesDots');
+  window.__refreshFiturCarousel = initCardCarousel('fiturGrid', '.fitur-card', 'fiturDots');
 })();
 </script>
 
@@ -1660,13 +1650,14 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
       if (facilities.length > 0) {
         const grid = document.getElementById('facilitiesGrid');
         if (grid) grid.innerHTML = renderFacilityCards(facilities);
-        if (window.__refreshFacilitiesNav) window.__refreshFacilitiesNav();
+        if (window.__refreshFacilitiesCarousel) window.__refreshFacilitiesCarousel();
       }
 
       const keunggulan = Array.isArray(data.keunggulan) ? data.keunggulan : [];
       if (keunggulan.length > 0) {
         const grid = document.getElementById('fiturGrid');
         if (grid) grid.innerHTML = renderFiturCards(keunggulan);
+        if (window.__refreshFiturCarousel) window.__refreshFiturCarousel();
       }
 
       const penghuni = Array.isArray(data.penghuni) ? data.penghuni : [];

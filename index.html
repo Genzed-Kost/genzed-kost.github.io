@@ -520,31 +520,43 @@ section { padding: clamp(64px, 10vw, 96px) 5vw; }
 .upgrade-cta-accent { color: var(--accent); font-weight: 600; font-size: .95rem; margin-bottom: 22px; }
 .upgrade-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
-/* ===== FASILITAS ===== */
+/* ===== FASILITAS (slider) ===== */
 #fasilitas { background: var(--surface); }
-.facilities-grid {
-  display: grid; grid-template-columns: repeat(4,1fr);
-  gap: 1px; background: var(--border);
-  border-radius: var(--r); overflow: hidden;
-  margin-top: clamp(32px,5vw,52px);
-  border: 1px solid var(--border);
-}
-.facility-item {
-  background: var(--surface); padding: 34px 28px;
-  display: flex; flex-direction: column; align-items: flex-start;
-  transition: background .25s;
-}
-.facility-item:hover { background: var(--surface2); }
-.fac-icon {
-  width: 60px; height: 60px;
-  background: rgba(200,240,75,.1); border: 1px solid rgba(200,240,75,.22);
-  border-radius: 16px;
+.facilities-carousel-wrap { margin-top: clamp(28px,4vw,40px); }
+.facilities-nav-row { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 18px; }
+.facilities-nav {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-size: 1.05rem; cursor: pointer; font-family: inherit;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.7rem; margin-bottom: 18px;
+  transition: border-color .2s, transform .15s var(--ease-out), opacity .2s;
+}
+.facilities-nav:hover { border-color: var(--border-h); transform: scale(1.06); }
+.facilities-nav:disabled { opacity: .32; cursor: default; transform: none; }
+.facilities-grid {
+  display: flex; gap: 16px;
+  overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+  padding-bottom: 6px; margin: 0 -1px;
+  -ms-overflow-style: none; scrollbar-width: none;
+}
+.facilities-grid::-webkit-scrollbar { display: none; }
+.facility-item {
+  flex: 0 0 auto; width: min(76vw, 270px); scroll-snap-align: start;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 30px 26px;
+  display: flex; flex-direction: column; align-items: flex-start;
+  transition: border-color .25s, transform .25s var(--ease-out);
+}
+.facility-item:hover { border-color: var(--border-h); transform: translateY(-5px); }
+.fac-icon {
+  width: 56px; height: 56px;
+  background: rgba(200,240,75,.1); border: 1px solid rgba(200,240,75,.22);
+  border-radius: 15px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; margin-bottom: 18px;
   transition: transform .25s var(--ease-out), background .25s;
 }
 .facility-item:hover .fac-icon { transform: scale(1.08) rotate(-4deg); }
-.facility-item:last-child { grid-column: 1 / -1; }
 .fac-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: .95rem; margin-bottom: 7px; }
 .fac-desc { font-size: .82rem; color: var(--muted); line-height: 1.6; }
 
@@ -1179,14 +1191,20 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
     </div>
     <p class="section-sub">Setiap fasilitas dirancang agar lo bisa fokus hal yang paling penting.</p>
   </div>
-  <div class="facilities-grid" id="facilitiesGrid">
-    <div class="facility-item reveal reveal-delay-1"><div class="fac-icon c-blue">🌐</div><div class="fac-title">WiFi Super Cepat</div><div class="fac-desc">Fiber optik 150 Mbps stabil 24 jam.</div></div>
-    <div class="facility-item reveal reveal-delay-2"><div class="fac-icon c-cyan">❄️</div><div class="fac-title">AC di Setiap Kamar</div><div class="fac-desc">AC inverter hemat energi tiap kamar.</div></div>
-    <div class="facility-item reveal reveal-delay-3"><div class="fac-icon c-teal">🚿</div><div class="fac-title">Kamar Mandi Dalam</div><div class="fac-desc">Privat, bersih, dengan water heater.</div></div>
-    <div class="facility-item reveal reveal-delay-4"><div class="fac-icon c-red">🔒</div><div class="fac-title">Keamanan 24 Jam</div><div class="fac-desc">CCTV full area + petugas keamanan.</div></div>
-    <div class="facility-item reveal reveal-delay-1"><div class="fac-icon c-orange">🌅</div><div class="fac-title">Friendly Rooftop</div><div class="fac-desc">Area santai & nongkrong eksklusif.</div></div>
-    <div class="facility-item reveal reveal-delay-2"><div class="fac-icon c-amber">🍳</div><div class="fac-title">Dapur Bersama</div><div class="fac-desc">Bersih, lengkap, kulkas & peralatan masak.</div></div>
-    <div class="facility-item reveal reveal-delay-3"><div class="fac-icon c-purple">🅿️</div><div class="fac-title">Parkir Aman</div><div class="fac-desc">Area parkir motor luas untuk penghuni.</div></div>
+  <div class="facilities-carousel-wrap">
+    <div class="facilities-nav-row">
+      <button type="button" class="facilities-nav" id="facilitiesPrev" aria-label="Fasilitas sebelumnya">←</button>
+      <button type="button" class="facilities-nav" id="facilitiesNext" aria-label="Fasilitas selanjutnya">→</button>
+    </div>
+    <div class="facilities-grid" id="facilitiesGrid">
+      <div class="facility-item reveal reveal-delay-1"><div class="fac-icon c-blue">🌐</div><div class="fac-title">WiFi Super Cepat</div><div class="fac-desc">Fiber optik 150 Mbps stabil 24 jam.</div></div>
+      <div class="facility-item reveal reveal-delay-2"><div class="fac-icon c-cyan">❄️</div><div class="fac-title">AC di Setiap Kamar</div><div class="fac-desc">AC inverter hemat energi tiap kamar.</div></div>
+      <div class="facility-item reveal reveal-delay-3"><div class="fac-icon c-teal">🚿</div><div class="fac-title">Kamar Mandi Dalam</div><div class="fac-desc">Privat, bersih, dengan water heater.</div></div>
+      <div class="facility-item reveal reveal-delay-4"><div class="fac-icon c-red">🔒</div><div class="fac-title">Keamanan 24 Jam</div><div class="fac-desc">CCTV full area + petugas keamanan.</div></div>
+      <div class="facility-item reveal reveal-delay-1"><div class="fac-icon c-orange">🌅</div><div class="fac-title">Friendly Rooftop</div><div class="fac-desc">Area santai & nongkrong eksklusif.</div></div>
+      <div class="facility-item reveal reveal-delay-2"><div class="fac-icon c-amber">🍳</div><div class="fac-title">Dapur Bersama</div><div class="fac-desc">Bersih, lengkap, kulkas & peralatan masak.</div></div>
+      <div class="facility-item reveal reveal-delay-3"><div class="fac-icon c-purple">🅿️</div><div class="fac-title">Parkir Aman</div><div class="fac-desc">Area parkir motor luas untuk penghuni.</div></div>
+    </div>
   </div>
 </section>
 
@@ -1450,6 +1468,32 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
       if (mobileMenu.classList.contains('open')) toggleMenu(false);
     }
   });
+
+  /* ── Fasilitas slider ── */
+  (function () {
+    const track = document.getElementById('facilitiesGrid');
+    const prevBtn = document.getElementById('facilitiesPrev');
+    const nextBtn = document.getElementById('facilitiesNext');
+    if (!track || !prevBtn || !nextBtn) return;
+
+    function cardStep() {
+      const card = track.querySelector('.facility-item');
+      if (!card) return 280;
+      const gap = parseFloat(getComputedStyle(track).columnGap || '16');
+      return card.getBoundingClientRect().width + gap;
+    }
+    function updateNavState() {
+      const max = track.scrollWidth - track.clientWidth - 2;
+      prevBtn.disabled = track.scrollLeft <= 2;
+      nextBtn.disabled = max <= 2 || track.scrollLeft >= max;
+    }
+    prevBtn.addEventListener('click', () => track.scrollBy({ left: -cardStep(), behavior: 'smooth' }));
+    nextBtn.addEventListener('click', () => track.scrollBy({ left: cardStep(), behavior: 'smooth' }));
+    track.addEventListener('scroll', updateNavState, { passive: true });
+    window.addEventListener('resize', updateNavState);
+    updateNavState();
+    window.__refreshFacilitiesNav = updateNavState;
+  })();
 })();
 </script>
 
@@ -1587,6 +1631,7 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
       if (facilities.length > 0) {
         const grid = document.getElementById('facilitiesGrid');
         if (grid) grid.innerHTML = renderFacilityCards(facilities);
+        if (window.__refreshFacilitiesNav) window.__refreshFacilitiesNav();
       }
 
       const keunggulan = Array.isArray(data.keunggulan) ? data.keunggulan : [];

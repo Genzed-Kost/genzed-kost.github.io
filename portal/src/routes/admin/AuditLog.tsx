@@ -13,6 +13,7 @@ const ACTION_LABEL: Record<string, string> = {
   approve_payment: "Setujui pembayaran",
   reject_payment: "Tolak pembayaran",
   delete_tenant: "Hapus penghuni",
+  update_landing_content: "Ubah konten landing page",
   create_payment_account: "Tambah rekening",
   update_payment_account: "Ubah rekening",
   activate_payment_account: "Aktifkan rekening",

@@ -23,6 +23,7 @@ import AdminKomplain from "./routes/admin/Komplain";
 import AdminDokumen from "./routes/admin/Dokumen";
 import AdminVoucher from "./routes/admin/Voucher";
 import Pengaturan from "./routes/admin/Pengaturan";
+import LandingPageSettings from "./routes/admin/LandingPage";
 import AuditLog from "./routes/admin/AuditLog";
 import PublikBayar from "./routes/PublikBayar";
 import NotFoundPortal from "./routes/NotFoundPortal";
@@ -63,6 +64,7 @@ export default function App() {
               <Route path="/admin/dokumen" element={<AdminDokumen />} />
               <Route path="/admin/voucher" element={<AdminVoucher />} />
               <Route path="/admin/pengaturan" element={<Pengaturan />} />
+              <Route path="/admin/landing" element={<LandingPageSettings />} />
               <Route path="/admin/audit-log" element={<AuditLog />} />
             </Route>
           </Route>

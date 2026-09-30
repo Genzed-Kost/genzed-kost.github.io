@@ -548,6 +548,21 @@ section { padding: clamp(64px, 10vw, 96px) 5vw; }
 .fac-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: .88rem; margin-bottom: 5px; }
 .fac-desc { font-size: .78rem; color: var(--muted); line-height: 1.55; }
 
+/* ===== GALERI (diisi admin lewat portal, kosong = section disembunyikan) ===== */
+#galeri[hidden] { display: none; }
+.galeri-grid {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 16px;
+  margin-top: clamp(32px,5vw,52px);
+}
+.galeri-item {
+  border-radius: var(--r); overflow: hidden; border: 1px solid var(--border);
+  background: var(--surface2);
+}
+.galeri-item img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+.galeri-caption { padding: 10px 12px; font-size: .78rem; color: var(--muted); }
+@media (max-width: 900px) { .galeri-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 560px) { .galeri-grid { grid-template-columns: 1fr; } }
+
 /* ===== LOKASI ===== */
 .lokasi-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
 /* Map as clickable link */
@@ -1021,15 +1036,15 @@ footer {
     </div>
     <div class="hero-stats">
       <div class="stat-item">
-        <div class="num">120<span>+</span></div>
+        <div class="num" id="heroStatPenghuni">120<span>+</span></div>
         <div class="label">Penghuni Aktif</div>
       </div>
       <div class="stat-item">
-        <div class="num">4.8<span>★</span></div>
+        <div class="num" id="heroStatRating">4.8<span>★</span></div>
         <div class="label">Rating Penghuni</div>
       </div>
       <div class="stat-item">
-        <div class="num">3<span>thn</span></div>
+        <div class="num" id="heroStatBerdiri">3<span>thn</span></div>
         <div class="label">Berdiri Sejak</div>
       </div>
     </div>
@@ -1215,6 +1230,19 @@ footer {
   </div>
 </section>
 
+<!-- GALERI — diisi admin lewat portal (Admin > Landing Page). Kosong = section
+     ini disembunyikan sama sekali, nggak nampilin apa-apa ke pengunjung/crawler. -->
+<section id="galeri" hidden>
+  <div class="section-header reveal">
+    <div>
+      <div class="section-eyebrow">Lihat Langsung</div>
+      <h2 class="section-title">Galeri Foto<br>Genzed Kost</h2>
+    </div>
+    <p class="section-sub">Kamar, fasilitas, dan suasana kost — biar lo nggak cuma bayangin doang.</p>
+  </div>
+  <div class="galeri-grid" id="galeriGrid"></div>
+</section>
+
 <!-- LOKASI -->
 <section id="lokasi">
   <div class="lokasi-layout">
@@ -1222,7 +1250,7 @@ footer {
       <div class="section-eyebrow">Kost Strategis di Serang, Banten</div>
       <h2 class="section-title">Pusat Kota<br>Serang, Banten</h2>
       <p class="section-sub" style="margin-bottom:28px;">Kost dekat <strong>Untirta</strong> (Universitas Sultan Ageng Tirtayasa) &amp; <strong>Universitas Pamulang Serang</strong> — hemat waktu, hemat ongkos.</p>
-      <div class="places-list">
+      <div class="places-list" id="placesList">
         <div class="place-item"><div class="place-icon">🎓</div><div class="place-info"><div class="place-name">Untirta &amp; Univ. Pamulang Serang</div><div class="place-type">Kampus Utama Serang, Banten</div></div><div class="place-dist">500 m</div></div>
         <div class="place-item"><div class="place-icon">🛒</div><div class="place-info"><div class="place-name">Supermarket &amp; Mini Market</div><div class="place-type">Kebutuhan Sehari-hari</div></div><div class="place-dist">200 m</div></div>
         <div class="place-item"><div class="place-icon">🏥</div><div class="place-info"><div class="place-name">Rumah Sakit Umum Serang</div><div class="place-type">Layanan Kesehatan</div></div><div class="place-dist">1.2 km</div></div>
@@ -1240,6 +1268,7 @@ footer {
         rel="noopener noreferrer"
         class="map-placeholder"
         aria-label="Buka lokasi Genzed Kost di Google Maps"
+        id="mapsLinkVisual"
       >
         <div class="map-inner" id="mapGrid" aria-hidden="true"></div>
         <div class="map-center-pin" aria-hidden="true"></div>
@@ -1253,6 +1282,7 @@ footer {
         target="_blank"
         rel="noopener noreferrer"
         class="map-open-btn"
+        id="mapsLinkButton"
       >
         📍 Lihat Lokasi di Google Maps
       </a>
@@ -1378,7 +1408,7 @@ footer {
       <h4>Kontak</h4>
       <ul>
         <li><a href="https://wa.link/v5vckc" target="_blank" rel="noopener">💬 WhatsApp Kami</a></li>
-        <li><a href="https://maps.app.goo.gl/9yuf1aS3yCpAdUzGA" target="_blank" rel="noopener">📍 Alamat Kost</a></li>
+        <li><a href="https://maps.app.goo.gl/9yuf1aS3yCpAdUzGA" target="_blank" rel="noopener" id="mapsLinkFooter">📍 Alamat Kost</a></li>
         <li><a href="#" class="qris-trigger" id="qrisTriggerFooter">📱 Bank Jago · QRIS</a></li>
       </ul>
     </div>
@@ -1652,6 +1682,81 @@ footer {
     if (e.target === e.currentTarget) closeQRIS();
   });
 })();
+</script>
+
+<!-- ═══ Konten yang bisa diedit admin (Admin → Landing Page) ═══
+     Sengaja terpisah dari script utama & jalan belakangan: HTML statis di atas
+     tetap yang dilihat Google/crawler (SEO nggak berubah), ini cuma nge-OVERRIDE
+     tampilan buat pengunjung asli setelah halaman kebuka. Fetch gagal/data kosong
+     → dibiarkan aja, konten default di atas tetap tampil apa adanya. -->
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+  const supabase = createClient(
+    'https://zgtcuwgwdtrswglxmenx.supabase.co',
+    'sb_publishable_p0gXKvXyrL1hA7l03tTgaw_pcPHtnFv'
+  );
+
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  (async function applyLandingContent() {
+    try {
+      const { data, error } = await supabase.from('landing_content').select('*').eq('id', true).maybeSingle();
+      if (error || !data) return;
+
+      const stats = data.stats || {};
+      const setStat = (id, val) => { if (val) { const el = document.getElementById(id); if (el) el.textContent = val; } };
+      setStat('heroStatPenghuni', stats.penghuni_aktif);
+      setStat('heroStatRating', stats.rating);
+      setStat('heroStatBerdiri', stats.berdiri_sejak);
+
+      if (data.maps_url) {
+        ['mapsLinkVisual', 'mapsLinkButton', 'mapsLinkFooter'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.href = data.maps_url;
+        });
+      }
+
+      const nearby = Array.isArray(data.nearby) ? data.nearby : [];
+      if (nearby.length > 0) {
+        const list = document.getElementById('placesList');
+        if (list) {
+          list.innerHTML = nearby.map(p => `
+            <div class="place-item">
+              <div class="place-icon">${escapeHtml(p.icon || '📍')}</div>
+              <div class="place-info">
+                <div class="place-name">${escapeHtml(p.label)}</div>
+                <div class="place-type">${escapeHtml(p.sublabel)}</div>
+              </div>
+              <div class="place-dist">${escapeHtml(p.distance)}</div>
+            </div>
+          `).join('');
+        }
+      }
+
+      const gallery = Array.isArray(data.gallery) ? data.gallery : [];
+      if (gallery.length > 0) {
+        const grid = document.getElementById('galeriGrid');
+        const section = document.getElementById('galeri');
+        if (grid && section) {
+          grid.innerHTML = gallery.map(g => {
+            const url = supabase.storage.from('landing-gallery').getPublicUrl(g.path).data.publicUrl;
+            return `
+              <div class="galeri-item">
+                <img src="${escapeHtml(url)}" alt="${escapeHtml(g.caption || '')}" loading="lazy">
+                ${g.caption ? `<div class="galeri-caption">${escapeHtml(g.caption)}</div>` : ''}
+              </div>
+            `;
+          }).join('');
+          section.hidden = false;
+        }
+      }
+    } catch {
+      // Gagal fetch/render nggak boleh nge-break landing page — biarin konten default tampil.
+    }
+  })();
 </script>
 </body>
 </html>

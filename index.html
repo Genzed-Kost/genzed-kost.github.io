@@ -580,24 +580,39 @@ section { padding: clamp(64px, 10vw, 96px) 5vw; }
   will-change: transform;
 }
 .map-placeholder:hover { border-color: var(--border-h); transform: scale(1.01); }
-.map-inner {
-  display: grid; grid-template-columns: repeat(8,1fr); grid-template-rows: repeat(8,1fr);
-  width: 80%; height: 80%; gap: 3px; opacity: .4; position: absolute;
+.map-radar { position: absolute; inset: 12%; }
+.map-radar-ring {
+  position: absolute; top: 50%; left: 50%; border: 1px solid var(--border);
+  border-radius: 50%; transform: translate(-50%, -50%);
 }
-.map-block { background: var(--border); border-radius: 3px; }
-.map-block.lit { background: rgba(200,240,75,.4); }
+.map-radar-ring.ring-1 { width: 46%; height: 46%; }
+.map-radar-ring.ring-2 { width: 72%; height: 72%; }
+.map-radar-ring.ring-3 { width: 98%; height: 98%; }
 .map-center-pin {
-  position: absolute; width: 44px; height: 44px;
+  position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; z-index: 3;
   background: var(--accent); border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
+  transform: translate(-50%, -50%) rotate(-45deg);
   box-shadow: 0 0 0 12px rgba(200,240,75,.14);
   display: flex; align-items: center; justify-content: center;
   transition: box-shadow .3s;
 }
 .map-placeholder:hover .map-center-pin { box-shadow: 0 0 0 18px rgba(200,240,75,.12); }
 .map-center-pin::after {
-  content: ''; width: 16px; height: 16px;
+  content: ''; width: 14px; height: 14px;
   background: #0A0A0A; border-radius: 50%; transform: rotate(45deg);
+}
+.map-marker {
+  position: absolute; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 3px; z-index: 2;
+}
+.map-marker-icon {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border-h);
+  display: flex; align-items: center; justify-content: center; font-size: .78rem;
+}
+.map-marker-dist {
+  font-size: .58rem; font-weight: 600; color: var(--text);
+  background: rgba(10,10,10,.7); padding: 1px 6px; border-radius: 100px; white-space: nowrap;
 }
 /* Hover overlay */
 .map-hover-overlay {
@@ -1193,8 +1208,20 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
         aria-label="Buka lokasi Genzed Kost di Google Maps"
         id="mapsLinkVisual"
       >
-        <div class="map-inner" id="mapGrid" aria-hidden="true"></div>
-        <div class="map-center-pin" aria-hidden="true"></div>
+        <div class="map-radar" aria-hidden="true">
+          <div class="map-radar-ring ring-1"></div>
+          <div class="map-radar-ring ring-2"></div>
+          <div class="map-radar-ring ring-3"></div>
+          <div class="map-center-pin"></div>
+          <div class="map-markers" id="mapMarkers">
+            <div class="map-marker" style="left:50%;top:17.6%;" title="Untirta & Univ. Pamulang Serang · 500 m"><span class="map-marker-icon">🎓</span><span class="map-marker-dist">500 m</span></div>
+            <div class="map-marker" style="left:69.7%;top:38.6%;" title="Supermarket & Mini Market · 200 m"><span class="map-marker-icon">🛒</span><span class="map-marker-dist">200 m</span></div>
+            <div class="map-marker" style="left:82.2%;top:68.6%;" title="Rumah Sakit Umum Serang · 1.2 km"><span class="map-marker-icon">🏥</span><span class="map-marker-dist">1.2 km</span></div>
+            <div class="map-marker" style="left:50%;top:77.6%;" title="Halte Trans & Stasiun Serang · 300 m"><span class="map-marker-icon">🚌</span><span class="map-marker-dist">300 m</span></div>
+            <div class="map-marker" style="left:34.4%;top:59%;" title="Coffee Shop & Kuliner Serang · 100 m"><span class="map-marker-icon">☕</span><span class="map-marker-dist">100 m</span></div>
+            <div class="map-marker" style="left:13.6%;top:29%;" title="Kawasan Perkantoran Serang · 1.5 km"><span class="map-marker-icon">🏢</span><span class="map-marker-dist">1.5 km</span></div>
+          </div>
+        </div>
         <div class="map-hover-overlay" aria-hidden="true">
           <div class="map-hover-label">📍 Buka di Google Maps</div>
         </div>
@@ -1392,21 +1419,6 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
     }
   }, { passive: true });
 
-  /* ── Map grid (deterministic) ── */
-  const mapGrid = document.getElementById('mapGrid');
-  if (mapGrid) {
-    const litSet = new Set([3,4,10,11,12,19,20,21,27,28,29,35,36,43,44,45,51,52]);
-    const frag = document.createDocumentFragment();
-    // seeded pseudo-random so layout is consistent across renders
-    function seeded(n) { let x = Math.sin(n * 9301 + 49297) * 233280; return x - Math.floor(x); }
-    for (let i = 0; i < 64; i++) {
-      const b = document.createElement('div');
-      b.className = 'map-block' + (litSet.has(i) || seeded(i) > .7 ? ' lit' : '');
-      frag.appendChild(b);
-    }
-    mapGrid.appendChild(frag);
-  }
-
   /* ── Digital Clock ── */
   (function () {
     const p = v => String(v).padStart(2, '0');
@@ -1469,6 +1481,46 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
     `).join('');
   }
 
+  function parseDistanceMeters(str) {
+    if (!str) return null;
+    const s = String(str).toLowerCase().replace(',', '.').trim();
+    const num = parseFloat(s);
+    if (isNaN(num)) return null;
+    return s.includes('km') ? num * 1000 : num;
+  }
+
+  function computeMarkerLayout(items) {
+    const list = items.slice(0, 8);
+    const n = list.length;
+    const withMeters = list.map((it, i) => ({ it, i, m: parseDistanceMeters(it.distance) ?? 99999 }));
+    const ranked = [...withMeters].sort((a, b) => a.m - b.m);
+    const rankOf = new Map(ranked.map((x, r) => [x.i, r]));
+    const minR = 16, maxR = 42;
+    return withMeters.map(({ it, i }) => {
+      const angle = (360 / n) * i - 90;
+      const rank = rankOf.get(i);
+      const radius = n <= 1 ? (minR + maxR) / 2 : minR + (maxR - minR) * (rank / (n - 1));
+      const rad = (angle * Math.PI) / 180;
+      return {
+        icon: it.icon, label: it.label, distance: it.distance,
+        left: 50 + radius * Math.cos(rad),
+        top: 50 + radius * Math.sin(rad),
+      };
+    });
+  }
+
+  function renderMapMarkers(items) {
+    const container = document.getElementById('mapMarkers');
+    if (!container || items.length === 0) return;
+    const layout = computeMarkerLayout(items);
+    container.innerHTML = layout.map(m => `
+      <div class="map-marker" style="left:${m.left.toFixed(1)}%;top:${m.top.toFixed(1)}%;" title="${escapeHtml(m.label || '')}${m.distance ? ' · ' + escapeHtml(m.distance) : ''}">
+        <span class="map-marker-icon">${escapeHtml(m.icon || '📍')}</span>
+        <span class="map-marker-dist">${escapeHtml(m.distance || '')}</span>
+      </div>
+    `).join('');
+  }
+
   function renderFiturCards(items) {
     return items.map(it => `
       <div class="fitur-card">
@@ -1517,6 +1569,7 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
             </div>
           `).join('');
         }
+        renderMapMarkers(nearby);
       }
 
       const facilities = Array.isArray(data.facilities) ? data.facilities : [];

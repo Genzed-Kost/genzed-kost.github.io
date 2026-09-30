@@ -126,7 +126,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 <style>
 /* ===== TOKENS ===== */
@@ -548,20 +547,25 @@ section { padding: clamp(64px, 10vw, 96px) 5vw; }
 .fac-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: .88rem; margin-bottom: 5px; }
 .fac-desc { font-size: .78rem; color: var(--muted); line-height: 1.55; }
 
-/* ===== GALERI (diisi admin lewat portal, kosong = section disembunyikan) ===== */
-#galeri[hidden] { display: none; }
-.galeri-grid {
-  display: grid; grid-template-columns: repeat(4,1fr); gap: 16px;
-  margin-top: clamp(32px,5vw,52px);
+/* ===== FASILITAS & FITUR: gambar upload (opsional, diisi admin) ===== */
+.fac-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+.fitur-card-img img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ===== PENGHUNI KOST (teks saja, diisi admin lewat portal) ===== */
+#penghuniGrid[hidden] { display: none; }
+.penghuni-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 16px;
+  margin-bottom: clamp(28px,4vw,40px);
 }
-.galeri-item {
-  border-radius: var(--r); overflow: hidden; border: 1px solid var(--border);
-  background: var(--surface2);
+.penghuni-card {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 20px 22px;
 }
-.galeri-item img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
-.galeri-caption { padding: 10px 12px; font-size: .78rem; color: var(--muted); }
-@media (max-width: 900px) { .galeri-grid { grid-template-columns: repeat(2,1fr); } }
-@media (max-width: 560px) { .galeri-grid { grid-template-columns: 1fr; } }
+.penghuni-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: .92rem; }
+.penghuni-meta { font-size: .76rem; color: var(--muted); margin-bottom: 10px; }
+.penghuni-quote { font-size: .85rem; color: var(--muted); line-height: 1.6; font-style: italic; }
+@media (max-width: 900px) { .penghuni-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 560px) { .penghuni-grid { grid-template-columns: 1fr; } }
 
 /* ===== LOKASI ===== */
 .lokasi-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
@@ -847,134 +851,6 @@ footer {
   *, .reveal { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
 
-/* ===== QRIS MODAL ===== */
-.qris-overlay {
-  position: fixed; inset: 0; z-index: 200;
-  background: rgba(0,0,0,.84);
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  display: flex; align-items: center; justify-content: center; padding: 20px;
-  opacity: 0; pointer-events: none;
-  transition: opacity .3s var(--ease-out);
-}
-.qris-overlay.open { opacity: 1; pointer-events: all; }
-
-.qris-card {
-  background: #fff; border-radius: 24px; max-width: 316px; width: 100%;
-  overflow: hidden; position: relative;
-  transform: scale(.88) translateY(22px);
-  transition: transform .4s var(--ease-out);
-  box-shadow: 0 40px 100px rgba(0,0,0,.55);
-}
-.qris-overlay.open .qris-card { transform: scale(1) translateY(0); }
-
-/* ── Close ── */
-.qris-close-btn {
-  position: absolute; top: 12px; right: 12px; z-index: 10;
-  width: 28px; height: 28px; border-radius: 50%;
-  background: #f0f0f0; color: #555; border: none; cursor: pointer;
-  font-size: .78rem; display: flex; align-items: center; justify-content: center;
-  transition: background .18s;
-}
-.qris-close-btn:hover { background: #ddd; color: #111; }
-
-/* ── Header ── */
-.qris-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 18px 14px; border-bottom: 1px solid #f2f2f2;
-}
-.qris-merchant-row { display: flex; align-items: center; gap: 10px; }
-.qris-avatar {
-  width: 38px; height: 38px; border-radius: 10px;
-  background: linear-gradient(135deg, #00B4D8, #0077B6);
-  display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;
-}
-.qris-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: .92rem; color: #111; }
-.qris-bank { font-size: .7rem; color: #999; margin-top: 1px; }
-
-/* QRIS official badge style */
-.qris-badge-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-.qris-badge {
-  background: #e8350f; color: #fff;
-  font-size: .58rem; font-weight: 900; letter-spacing: .12em;
-  text-transform: uppercase; padding: 3px 8px; border-radius: 5px;
-  line-height: 1.4;
-}
-.qris-bi-label { font-size: .56rem; color: #bbb; letter-spacing: .04em; }
-
-/* ── QR Body ── */
-.qris-body { padding: 18px 18px 14px; }
-.qris-qr-outer {
-  position: relative; border: 1.5px solid #ebebeb; border-radius: 14px;
-  padding: 12px; margin-bottom: 14px;
-  display: flex; align-items: center; justify-content: center;
-  background: #fff;
-}
-/* Red corner marks — QRIS style */
-.qris-qr-outer::before,
-.qris-qr-outer::after {
-  content: ''; position: absolute;
-  width: 18px; height: 18px; border-color: #e8350f; border-style: solid;
-}
-.qris-qr-outer::before { top: -1px; left: -1px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
-.qris-qr-outer::after  { bottom: -1px; right: -1px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
-.qris-corner-tr, .qris-corner-bl {
-  position: absolute; width: 18px; height: 18px;
-  border-color: #e8350f; border-style: solid;
-}
-.qris-corner-tr { top: -1px; right: -1px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
-.qris-corner-bl { bottom: -1px; left: -1px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
-
-#qrCanvas canvas, #qrCanvas img { display: block; border-radius: 4px; }
-
-/* Refresh overlay */
-.qris-refresh-overlay {
-  position: absolute; inset: 0; background: rgba(255,255,255,.94);
-  border-radius: 13px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
-  opacity: 0; pointer-events: none;
-  transition: opacity .2s;
-}
-.qris-refresh-overlay.show { opacity: 1; pointer-events: all; }
-.qris-spinner {
-  width: 30px; height: 30px; border: 3px solid #f0f0f0;
-  border-top-color: #e8350f; border-radius: 50%;
-  animation: qr-spin .65s linear infinite;
-}
-@keyframes qr-spin { to { transform: rotate(360deg); } }
-.qris-refresh-label { font-size: .7rem; color: #999; font-weight: 500; }
-
-/* ── Timer ── */
-.qris-timer { margin-bottom: 4px; }
-.qris-timer-bar {
-  height: 3px; background: #f0f0f0; border-radius: 3px; overflow: hidden; margin-bottom: 6px;
-}
-.qris-timer-fill {
-  height: 100%; width: 100%; border-radius: 3px;
-  background: #2ecc71;
-  transition: width 1s linear, background .5s;
-}
-.qris-timer-fill.warn  { background: #f39c12; }
-.qris-timer-fill.urgent{ background: #e8350f; }
-.qris-timer-text { font-size: .7rem; color: #bbb; text-align: center; }
-.qris-timer-text b { color: #555; }
-
-/* ── Footer ── */
-.qris-footer {
-  border-top: 1px solid #f2f2f2; background: #fafafa;
-  padding: 11px 18px 13px;
-  display: flex; flex-direction: column; align-items: center; gap: 9px;
-}
-.qris-scan-hint { font-size: .7rem; color: #aaa; text-align: center; }
-.qris-apps { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
-.qris-app {
-  border: 1px solid #e8e8e8; border-radius: 100px;
-  font-size: .62rem; font-weight: 600; color: #666;
-  padding: 3px 9px; background: #fff; white-space: nowrap;
-}
-
-/* ── Trigger ── */
-.qris-trigger { cursor: pointer; }
-.qris-trigger:hover { color: var(--accent) !important; }
 </style>
 </head>
 <body>
@@ -1129,7 +1005,7 @@ footer {
     </div>
     <p class="section-sub">Semua yang lo butuhin dalam satu tempat. No drama, pure comfort.</p>
   </div>
-  <div class="fitur-grid">
+  <div class="fitur-grid" id="fiturGrid">
     <div class="fitur-card reveal reveal-delay-1">
       <div class="fitur-card-img">🛏️</div>
       <div class="fitur-card-body">
@@ -1218,7 +1094,7 @@ footer {
     </div>
     <p class="section-sub">Setiap fasilitas dirancang agar lo bisa fokus hal yang paling penting.</p>
   </div>
-  <div class="facilities-grid">
+  <div class="facilities-grid" id="facilitiesGrid">
     <div class="facility-item reveal reveal-delay-1"><div class="fac-icon">🌐</div><div class="fac-title">WiFi Super Cepat</div><div class="fac-desc">Fiber optik 100 Mbps stabil 24 jam.</div></div>
     <div class="facility-item reveal reveal-delay-2"><div class="fac-icon">❄️</div><div class="fac-title">AC di Setiap Kamar</div><div class="fac-desc">AC inverter hemat energi tiap kamar.</div></div>
     <div class="facility-item reveal reveal-delay-3"><div class="fac-icon">🚿</div><div class="fac-title">Kamar Mandi Dalam</div><div class="fac-desc">Privat, bersih, dengan water heater.</div></div>
@@ -1228,19 +1104,6 @@ footer {
     <div class="facility-item reveal reveal-delay-3"><div class="fac-icon">🍳</div><div class="fac-title">Dapur Bersama</div><div class="fac-desc">Bersih, lengkap, kulkas & peralatan masak.</div></div>
     <div class="facility-item reveal reveal-delay-4"><div class="fac-icon">🅿️</div><div class="fac-title">Parkir Aman</div><div class="fac-desc">Area parkir motor luas untuk penghuni.</div></div>
   </div>
-</section>
-
-<!-- GALERI — diisi admin lewat portal (Admin > Landing Page). Kosong = section
-     ini disembunyikan sama sekali, nggak nampilin apa-apa ke pengunjung/crawler. -->
-<section id="galeri" hidden>
-  <div class="section-header reveal">
-    <div>
-      <div class="section-eyebrow">Lihat Langsung</div>
-      <h2 class="section-title">Galeri Foto<br>Genzed Kost</h2>
-    </div>
-    <p class="section-sub">Kamar, fasilitas, dan suasana kost — biar lo nggak cuma bayangin doang.</p>
-  </div>
-  <div class="galeri-grid" id="galeriGrid"></div>
 </section>
 
 <!-- LOKASI -->
@@ -1299,7 +1162,8 @@ footer {
     </div>
     <p class="section-sub">Testimoni asli lagi kami kumpulkan dari penghuni.</p>
   </div>
-  <div class="testimonial-cta reveal reveal-delay-1">
+  <div class="penghuni-grid" id="penghuniGrid" hidden></div>
+  <div class="testimonial-cta reveal reveal-delay-1" id="testimonialCta">
     <div class="testimonial-cta-icon">💬</div>
     <p class="testimonial-cta-text">Belum ada testimoni tertulis di sini — kami nggak mau pasang testimoni abal-abal cuma buat kelihatan ramai. Cara paling jujur buat tau gimana rasanya tinggal di Genzed Kost? Survei langsung, ngobrol sama penghuni yang udah ada, cek sendiri kamarnya.</p>
     <a href="https://wa.link/v5vckc" target="_blank" rel="noopener" class="btn-primary">💬 Ajak Survei Kamar</a>
@@ -1369,7 +1233,7 @@ footer {
     <div class="payment-label">Metode Pembayaran</div>
     <div class="payment-methods">
       <div class="pay-badge primary">🏦 Bank Jago (Utama)</div>
-      <div class="pay-badge qris-trigger" id="qrisTriggerBadge" role="button" tabindex="0" aria-label="Buka QRIS">📱 QRIS</div>
+      <div class="pay-badge">📱 QRIS</div>
     </div>
     <div class="payment-note">Semua harga inklusif — tidak ada biaya tersembunyi.</div>
   </div>
@@ -1409,7 +1273,7 @@ footer {
       <ul>
         <li><a href="https://wa.link/v5vckc" target="_blank" rel="noopener">💬 WhatsApp Kami</a></li>
         <li><a href="https://maps.app.goo.gl/9yuf1aS3yCpAdUzGA" target="_blank" rel="noopener" id="mapsLinkFooter">📍 Alamat Kost</a></li>
-        <li><a href="#" class="qris-trigger" id="qrisTriggerFooter">📱 Bank Jago · QRIS</a></li>
+        <li>📱 Bank Jago · QRIS</li>
       </ul>
     </div>
   </div>
@@ -1418,62 +1282,6 @@ footer {
     <span>Kost terbaik dekat Untirta &amp; Pamulang Serang</span>
   </div>
 </footer>
-
-<!-- QRIS MODAL -->
-<div class="qris-overlay" id="qrisOverlay" role="dialog" aria-modal="true" aria-label="Bayar via QRIS">
-  <div class="qris-card">
-    <button class="qris-close-btn" id="qrisClose" aria-label="Tutup">✕</button>
-
-    <!-- Header: merchant info + QRIS badge -->
-    <div class="qris-header">
-      <div class="qris-merchant-row">
-        <div class="qris-avatar">🏦</div>
-        <div>
-          <div class="qris-name">Genzed Kost</div>
-          <div class="qris-bank">Bank Jago</div>
-        </div>
-      </div>
-      <div class="qris-badge-wrap">
-        <div class="qris-badge">QRIS</div>
-        <div class="qris-bi-label">Bank Indonesia</div>
-      </div>
-    </div>
-
-    <!-- QR Code area -->
-    <div class="qris-body">
-      <div class="qris-qr-outer">
-        <span class="qris-corner-tr" aria-hidden="true"></span>
-        <span class="qris-corner-bl" aria-hidden="true"></span>
-        <div id="qrCanvas"></div>
-        <div class="qris-refresh-overlay" id="qrisRefreshOverlay">
-          <div class="qris-spinner"></div>
-          <span class="qris-refresh-label">Memperbarui QR…</span>
-        </div>
-      </div>
-
-      <!-- Countdown timer -->
-      <div class="qris-timer">
-        <div class="qris-timer-bar">
-          <div class="qris-timer-fill" id="qrisTimerFill"></div>
-        </div>
-        <div class="qris-timer-text">QR diperbarui dalam <b><span id="qrisCountdown">50</span>s</b></div>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="qris-footer">
-      <div class="qris-scan-hint">Scan via M-Banking atau E-Wallet apapun</div>
-      <div class="qris-apps">
-        <span class="qris-app">GoPay</span>
-        <span class="qris-app">OVO</span>
-        <span class="qris-app">DANA</span>
-        <span class="qris-app">ShopeePay</span>
-        <span class="qris-app">Jago</span>
-        <span class="qris-app">LinkAja</span>
-      </div>
-    </div>
-  </div>
-</div>
 
 <script>
 (function () {
@@ -1559,127 +1367,7 @@ footer {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       if (mobileMenu.classList.contains('open')) toggleMenu(false);
-      if (document.getElementById('qrisOverlay').classList.contains('open')) closeQRIS();
     }
-  });
-
-  /* ── QRIS Modal ── */
-
-  // ① EMV TLV helper
-  function emv(id, val) {
-    return id + String(val.length).padStart(2, '0') + val;
-  }
-
-  // ② CRC-16/CCITT-FALSE (poly 0x1021, init 0xFFFF) — required by QRIS spec
-  function crc16(str) {
-    let c = 0xFFFF;
-    for (let i = 0; i < str.length; i++) {
-      c ^= str.charCodeAt(i) << 8;
-      for (let j = 0; j < 8; j++) c = (c & 0x8000) ? (c << 1) ^ 0x1021 : c << 1;
-    }
-    return (c & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
-  }
-
-  // ③ Build QRIS EMV payload — dynamic (Point of Initiation = 12)
-  //    Account ref decoded at runtime only; never written to DOM
-  const _pr = [49,48,51,48,57,51,50,57,56,56,57,51];
-  function _buildPayload() {
-    const _acct = _pr.map(c => String.fromCharCode(c)).join('');
-    const nonce  = Date.now().toString(36).toUpperCase().slice(-8); // changes each refresh
-
-    const mai = emv('00','ID.CO.JAGO.WWW') + emv('01', _acct) + emv('02','UMI');
-    const adf = emv('05', nonce);   // Bill number / reference (tag 05 in tag 62)
-
-    const body =
-      emv('00','01')          +  // Payload Format Indicator
-      emv('01','12')          +  // Dynamic QR (refreshes)
-      emv('26', mai)          +  // Merchant Account Info — Bank Jago
-      emv('52','5999')        +  // MCC: Misc. retail
-      emv('53','360')         +  // Currency: IDR
-      emv('58','ID')          +  // Country: Indonesia
-      emv('59','GENZED KOST') +  // Merchant name (≤25 chars)
-      emv('60','INDONESIA')   +  // City
-      emv('62', adf);            // Additional data
-
-    return body + emv('63', crc16(body + '6304')); // CRC appended last
-  }
-
-  // ④ Render QR to canvas
-  function _renderQR() {
-    document.getElementById('qrCanvas').innerHTML = '';
-    if (typeof QRCode === 'undefined') return;
-    new QRCode(document.getElementById('qrCanvas'), {
-      text: _buildPayload(),
-      width: 218, height: 218,
-      colorDark: '#111111',
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.H
-    });
-  }
-
-  // ⑤ Countdown — 50 s, refreshes QR at zero
-  let _qrSec = 50, _qrClock = null;
-  const _fillEl  = () => document.getElementById('qrisTimerFill');
-  const _countEl = () => document.getElementById('qrisCountdown');
-
-  function _tickUI() {
-    const pct  = (_qrSec / 50) * 100;
-    const fill = _fillEl();
-    if (fill) {
-      fill.style.width = pct + '%';
-      fill.classList.toggle('warn',   _qrSec <= 20 && _qrSec > 10);
-      fill.classList.toggle('urgent', _qrSec <= 10);
-    }
-    if (_countEl()) _countEl().textContent = _qrSec;
-  }
-
-  function _startClock() {
-    clearInterval(_qrClock);
-    _qrSec = 50;
-    _tickUI();
-    _qrClock = setInterval(() => {
-      _qrSec--;
-      _tickUI();
-      if (_qrSec <= 0) _doRefresh();
-    }, 1000);
-  }
-
-  function _doRefresh() {
-    _qrSec = 50;
-    const ov = document.getElementById('qrisRefreshOverlay');
-    if (ov) ov.classList.add('show');
-    setTimeout(() => {
-      _renderQR();
-      if (ov) ov.classList.remove('show');
-      _tickUI();
-    }, 800);
-  }
-
-  // ⑥ Open / close
-  function openQRIS() {
-    document.getElementById('qrisOverlay').classList.add('open');
-    document.body.style.overflow = 'hidden';
-    _renderQR();
-    _startClock();
-  }
-
-  function closeQRIS() {
-    document.getElementById('qrisOverlay').classList.remove('open');
-    document.body.style.overflow = '';
-    clearInterval(_qrClock);
-    _qrClock = null;
-  }
-
-  // Triggers: pricing badge + footer link
-  document.querySelectorAll('.qris-trigger').forEach(el => {
-    el.addEventListener('click',   e => { e.preventDefault(); openQRIS(); });
-    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openQRIS(); } });
-  });
-
-  // Close: ✕ button + backdrop
-  document.getElementById('qrisClose').addEventListener('click', closeQRIS);
-  document.getElementById('qrisOverlay').addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeQRIS();
   });
 })();
 </script>
@@ -1699,6 +1387,38 @@ footer {
 
   function escapeHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  function publicImageUrl(path) {
+    return supabase.storage.from('landing-gallery').getPublicUrl(path).data.publicUrl;
+  }
+
+  function iconOrImage(item) {
+    return item.image_path
+      ? `<img src="${escapeHtml(publicImageUrl(item.image_path))}" alt="" loading="lazy">`
+      : escapeHtml(item.icon || '✨');
+  }
+
+  function renderFacilityCards(items) {
+    return items.map(it => `
+      <div class="facility-item">
+        <div class="fac-icon">${iconOrImage(it)}</div>
+        <div class="fac-title">${escapeHtml(it.title)}</div>
+        <div class="fac-desc">${escapeHtml(it.desc || '')}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderFiturCards(items) {
+    return items.map(it => `
+      <div class="fitur-card">
+        <div class="fitur-card-img">${iconOrImage(it)}</div>
+        <div class="fitur-card-body">
+          <div class="fitur-card-title">${escapeHtml(it.title)}</div>
+          <div class="fitur-card-desc">${escapeHtml(it.desc || '')}</div>
+        </div>
+      </div>
+    `).join('');
   }
 
   (async function applyLandingContent() {
@@ -1736,21 +1456,32 @@ footer {
         }
       }
 
-      const gallery = Array.isArray(data.gallery) ? data.gallery : [];
-      if (gallery.length > 0) {
-        const grid = document.getElementById('galeriGrid');
-        const section = document.getElementById('galeri');
-        if (grid && section) {
-          grid.innerHTML = gallery.map(g => {
-            const url = supabase.storage.from('landing-gallery').getPublicUrl(g.path).data.publicUrl;
-            return `
-              <div class="galeri-item">
-                <img src="${escapeHtml(url)}" alt="${escapeHtml(g.caption || '')}" loading="lazy">
-                ${g.caption ? `<div class="galeri-caption">${escapeHtml(g.caption)}</div>` : ''}
-              </div>
-            `;
-          }).join('');
-          section.hidden = false;
+      const facilities = Array.isArray(data.facilities) ? data.facilities : [];
+      if (facilities.length > 0) {
+        const grid = document.getElementById('facilitiesGrid');
+        if (grid) grid.innerHTML = renderFacilityCards(facilities);
+      }
+
+      const keunggulan = Array.isArray(data.keunggulan) ? data.keunggulan : [];
+      if (keunggulan.length > 0) {
+        const grid = document.getElementById('fiturGrid');
+        if (grid) grid.innerHTML = renderFiturCards(keunggulan);
+      }
+
+      const penghuni = Array.isArray(data.penghuni) ? data.penghuni : [];
+      if (penghuni.length > 0) {
+        const grid = document.getElementById('penghuniGrid');
+        const cta = document.getElementById('testimonialCta');
+        if (grid) {
+          grid.innerHTML = penghuni.map(p => `
+            <div class="penghuni-card">
+              <div class="penghuni-name">${escapeHtml(p.name)}</div>
+              <div class="penghuni-meta">${[p.age ? escapeHtml(p.age) + ' th' : '', escapeHtml(p.activity || '')].filter(Boolean).join(' · ')}</div>
+              <div class="penghuni-quote">"${escapeHtml(p.quote || '')}"</div>
+            </div>
+          `).join('');
+          grid.hidden = false;
+          if (cta) cta.hidden = true;
         }
       }
     } catch {

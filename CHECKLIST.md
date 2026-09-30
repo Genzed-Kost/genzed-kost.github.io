@@ -10,13 +10,13 @@ development ditandai ✅; yang masih butuh tindakan manual pemilik kost ditandai
 
 Beberapa bagian sengaja dibiarkan kosong/placeholder daripada diisi konten palsu:
 
-- ⬜ **Foto kamar & fasilitas asli.** Sudah bisa diisi sendiri lewat **Admin → Landing
-  Page → Galeri Foto** (upload langsung, nggak perlu developer) — section galeri
-  otomatis muncul di landing page begitu ada minimal 1 foto.
-- ⬜ **Testimoni asli dari penghuni.** Section Testimoni sekarang isinya CTA "ajak survei
-  kamar" (testimoni template lama yang jelas palsu sudah dihapus). Ganti isinya kalau
-  udah ada testimoni asli (boleh nama inisial aja) — ini masih butuh developer, belum
-  ada UI admin buat bagian ini.
+- ⬜ **Foto fasilitas & keunggulan asli.** Sudah bisa diisi sendiri lewat **Admin →
+  Landing Page → Fasilitas / Keunggulan Kami** (upload langsung per item, nggak perlu
+  developer) — kalau nggak diupload, tampil pakai ikon emoji default.
+- ⬜ **Testimoni/penghuni asli.** Sudah bisa diisi sendiri lewat **Admin → Landing Page →
+  Penghuni Kost** (teks aja: nama, umur, kegiatan, sepatah kata — nggak perlu foto).
+  Begitu ada minimal 1 entri, otomatis gantiin CTA "ajak survei kamar" default di
+  section Testimoni.
 - ⬜ **Lokasi & jarak ke tempat penting.** Sudah bisa diisi sendiri lewat **Admin →
   Landing Page**: link Google Maps asli + daftar jarak rute (bukan garis lurus — buka
   Google Maps sendiri, lihat rutenya, baru ketik jaraknya di form admin).

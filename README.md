@@ -2,7 +2,7 @@
 
 Website Genzed Kost (Serang, Banten) terdiri dari dua bagian:
 
-1. **Landing page** ([`index.html`](index.html)) — halaman promosi statis (tetap statis buat SEO), plus 3 halaman info statis: [`peraturan.html`](peraturan.html) (tata tertib), [`faq.html`](faq.html) (pertanyaan umum), [`privasi.html`](privasi.html) (kebijakan privasi). Semuanya di-link dari footer. Section testimoni sengaja diganti CTA "ajak survei kamar" (bukan testimoni palsu) sampai ada testimoni asli dari penghuni. Beberapa bagian bisa diedit admin lewat portal (**Admin → Landing Page**) TANPA deploy ulang: statistik hero, link Google Maps, daftar lokasi strategis, dan galeri foto — lihat tabel `landing_content`.
+1. **Landing page** ([`index.html`](index.html)) — halaman promosi statis (tetap statis buat SEO), plus 3 halaman info statis: [`peraturan.html`](peraturan.html) (tata tertib), [`faq.html`](faq.html) (pertanyaan umum), [`privasi.html`](privasi.html) (kebijakan privasi). Semuanya di-link dari footer. Beberapa bagian bisa diedit admin lewat portal (**Admin → Landing Page**) TANPA deploy ulang: statistik hero, link Google Maps, daftar lokasi strategis, item Fasilitas & Keunggulan Kami (judul/deskripsi + foto opsional, fallback ke ikon emoji), dan Penghuni Kost (teks doang: nama/umur/kegiatan/sepatah kata) — lihat tabel `landing_content`. Section Testimoni otomatis pakai CTA "ajak survei kamar" selama belum ada penghuni yang diisi, lalu ganti ke kartu penghuni begitu admin isi minimal 1 entri. Modal QRIS dinamis (auto-generate + refresh tiap 50 detik) yang dulu ada di landing page sudah dihapus total — QRIS tetap sah dipakai lewat gambar QRIS asli di daftar rekening Transfer Manual.
 2. **Portal Penghuni & Admin** ([`portal/`](portal/)) — aplikasi login, tagihan, pembayaran, dan panel admin. Dibangun pakai React + TypeScript (Vite), backend-nya Supabase.
 
 Status pembangunan:
@@ -163,5 +163,5 @@ supabase/
 ## Catatan Keterbatasan
 
 - **Sudah dites live berkali-kali** selama pengembangan — bukan cuma `npm run test` (68 unit test buat logika billing/pembayaran), tapi juga tes ujung-ke-ujung langsung ke project Supabase asli, plus verifikasi di situs yang sudah di-deploy. Tetap disarankan ulang tes serupa kalau lo fork/pindah ke project Supabase baru, karena environment production lo beda dari yang dipakai testing.
-- Belum ada galeri foto kamar & testimoni asli di landing page — sengaja nunggu foto dan testimoni asli dari pemilik kost, bukan isi placeholder/palsu.
+- Belum ada foto asli & testimoni penghuni asli di landing page — sengaja nunggu diisi lewat **Admin → Landing Page** (Fasilitas/Keunggulan/Penghuni Kost) oleh pemilik kost, bukan isi placeholder/palsu.
 - Admin pertama **harus** dibuat manual lewat Supabase dashboard (langkah 11) — nggak ada cara bikin admin dari dalam aplikasi, ini memang disengaja demi keamanan.

@@ -10,13 +10,16 @@ development ditandai ✅; yang masih butuh tindakan manual pemilik kost ditandai
 
 Beberapa bagian sengaja dibiarkan kosong/placeholder daripada diisi konten palsu:
 
-- ⬜ **Foto kamar & fasilitas asli.** Landing page belum punya galeri foto sama sekali
-  (cuma logo). Kirim beberapa foto kamar/fasilitas kalau mau ditambahkan section galeri.
+- ⬜ **Foto kamar & fasilitas asli.** Sudah bisa diisi sendiri lewat **Admin → Landing
+  Page → Galeri Foto** (upload langsung, nggak perlu developer) — section galeri
+  otomatis muncul di landing page begitu ada minimal 1 foto.
 - ⬜ **Testimoni asli dari penghuni.** Section Testimoni sekarang isinya CTA "ajak survei
   kamar" (testimoni template lama yang jelas palsu sudah dihapus). Ganti isinya kalau
-  udah ada testimoni asli (boleh nama inisial aja).
-- ⬜ **Alamat lengkap.** Sekarang cuma "Serang, Banten" (kota doang) + link Google Maps.
-  Tambahin nama jalan/patokan kalau mau lebih spesifik buat SEO lokal.
+  udah ada testimoni asli (boleh nama inisial aja) — ini masih butuh developer, belum
+  ada UI admin buat bagian ini.
+- ⬜ **Lokasi & jarak ke tempat penting.** Sudah bisa diisi sendiri lewat **Admin →
+  Landing Page**: link Google Maps asli + daftar jarak rute (bukan garis lurus — buka
+  Google Maps sendiri, lihat rutenya, baru ketik jaraknya di form admin).
 - ⬜ **Review isi `peraturan.html`, `faq.html`, `privasi.html`.** Isinya ditulis generik
   berdasarkan pola kost pada umumnya — sesuaikan sama aturan & kebijakan asli Genzed Kost
   (jam malam, denda, dll) sebelum dianggap final.

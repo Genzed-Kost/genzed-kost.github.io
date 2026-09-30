@@ -2,7 +2,7 @@
 
 Website Genzed Kost (Serang, Banten) terdiri dari dua bagian:
 
-1. **Landing page** ([`index.html`](index.html)) — halaman promosi statis, plus 3 halaman info statis: [`peraturan.html`](peraturan.html) (tata tertib), [`faq.html`](faq.html) (pertanyaan umum), [`privasi.html`](privasi.html) (kebijakan privasi). Semuanya di-link dari footer. Section testimoni sengaja diganti CTA "ajak survei kamar" (bukan testimoni palsu) sampai ada testimoni asli dari penghuni — sama, galeri foto kamar belum ditambahkan karena belum ada foto asli yang bisa dipakai.
+1. **Landing page** ([`index.html`](index.html)) — halaman promosi statis (tetap statis buat SEO), plus 3 halaman info statis: [`peraturan.html`](peraturan.html) (tata tertib), [`faq.html`](faq.html) (pertanyaan umum), [`privasi.html`](privasi.html) (kebijakan privasi). Semuanya di-link dari footer. Section testimoni sengaja diganti CTA "ajak survei kamar" (bukan testimoni palsu) sampai ada testimoni asli dari penghuni. Beberapa bagian bisa diedit admin lewat portal (**Admin → Landing Page**) TANPA deploy ulang: statistik hero, link Google Maps, daftar lokasi strategis, dan galeri foto — lihat tabel `landing_content`.
 2. **Portal Penghuni & Admin** ([`portal/`](portal/)) — aplikasi login, tagihan, pembayaran, dan panel admin. Dibangun pakai React + TypeScript (Vite), backend-nya Supabase.
 
 Status pembangunan:

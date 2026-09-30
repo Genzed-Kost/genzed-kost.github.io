@@ -534,20 +534,22 @@ section { padding: clamp(64px, 10vw, 96px) 5vw; }
 .facilities-nav:hover { border-color: var(--border-h); transform: scale(1.06); }
 .facilities-nav:disabled { opacity: .32; cursor: default; transform: none; }
 .facilities-grid {
-  display: flex; gap: 16px;
+  --card-w: min(82vw, 320px);
+  display: flex; gap: 16px; align-items: center;
   overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
-  padding-bottom: 6px; margin: 0 -1px;
+  padding: 10px calc(50% - (var(--card-w) / 2)) 16px;
   -ms-overflow-style: none; scrollbar-width: none;
 }
 .facilities-grid::-webkit-scrollbar { display: none; }
 .facility-item {
-  flex: 0 0 auto; width: min(76vw, 270px); scroll-snap-align: start;
+  flex: 0 0 auto; width: var(--card-w); scroll-snap-align: center;
   background: var(--bg); border: 1px solid var(--border); border-radius: var(--r);
   padding: 30px 26px;
   display: flex; flex-direction: column; align-items: flex-start;
-  transition: border-color .25s, transform .25s var(--ease-out);
+  opacity: .4; transform: scale(.88);
+  transition: border-color .3s, opacity .4s var(--ease-out), transform .4s var(--ease-out);
 }
-.facility-item:hover { border-color: var(--border-h); transform: translateY(-5px); }
+.facility-item.is-active { opacity: 1; transform: scale(1); border-color: var(--border-h); }
 .fac-icon {
   width: 56px; height: 56px;
   background: rgba(200,240,75,.1); border: 1px solid rgba(200,240,75,.22);
@@ -1197,13 +1199,13 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
       <button type="button" class="facilities-nav" id="facilitiesNext" aria-label="Fasilitas selanjutnya">→</button>
     </div>
     <div class="facilities-grid" id="facilitiesGrid">
-      <div class="facility-item reveal reveal-delay-1"><div class="fac-icon c-blue">🌐</div><div class="fac-title">WiFi Super Cepat</div><div class="fac-desc">Fiber optik 150 Mbps stabil 24 jam.</div></div>
-      <div class="facility-item reveal reveal-delay-2"><div class="fac-icon c-cyan">❄️</div><div class="fac-title">AC di Setiap Kamar</div><div class="fac-desc">AC inverter hemat energi tiap kamar.</div></div>
-      <div class="facility-item reveal reveal-delay-3"><div class="fac-icon c-teal">🚿</div><div class="fac-title">Kamar Mandi Dalam</div><div class="fac-desc">Privat, bersih, dengan water heater.</div></div>
-      <div class="facility-item reveal reveal-delay-4"><div class="fac-icon c-red">🔒</div><div class="fac-title">Keamanan 24 Jam</div><div class="fac-desc">CCTV full area + petugas keamanan.</div></div>
-      <div class="facility-item reveal reveal-delay-1"><div class="fac-icon c-orange">🌅</div><div class="fac-title">Friendly Rooftop</div><div class="fac-desc">Area santai & nongkrong eksklusif.</div></div>
-      <div class="facility-item reveal reveal-delay-2"><div class="fac-icon c-amber">🍳</div><div class="fac-title">Dapur Bersama</div><div class="fac-desc">Bersih, lengkap, kulkas & peralatan masak.</div></div>
-      <div class="facility-item reveal reveal-delay-3"><div class="fac-icon c-purple">🅿️</div><div class="fac-title">Parkir Aman</div><div class="fac-desc">Area parkir motor luas untuk penghuni.</div></div>
+      <div class="facility-item"><div class="fac-icon c-blue">🌐</div><div class="fac-title">WiFi Super Cepat</div><div class="fac-desc">Fiber optik 150 Mbps stabil 24 jam.</div></div>
+      <div class="facility-item"><div class="fac-icon c-cyan">❄️</div><div class="fac-title">AC di Setiap Kamar</div><div class="fac-desc">AC inverter hemat energi tiap kamar.</div></div>
+      <div class="facility-item"><div class="fac-icon c-teal">🚿</div><div class="fac-title">Kamar Mandi Dalam</div><div class="fac-desc">Privat, bersih, dengan water heater.</div></div>
+      <div class="facility-item"><div class="fac-icon c-red">🔒</div><div class="fac-title">Keamanan 24 Jam</div><div class="fac-desc">CCTV full area + petugas keamanan.</div></div>
+      <div class="facility-item"><div class="fac-icon c-orange">🌅</div><div class="fac-title">Friendly Rooftop</div><div class="fac-desc">Area santai & nongkrong eksklusif.</div></div>
+      <div class="facility-item"><div class="fac-icon c-amber">🍳</div><div class="fac-title">Dapur Bersama</div><div class="fac-desc">Bersih, lengkap, kulkas & peralatan masak.</div></div>
+      <div class="facility-item"><div class="fac-icon c-purple">🅿️</div><div class="fac-title">Parkir Aman</div><div class="fac-desc">Area parkir motor luas untuk penghuni.</div></div>
     </div>
   </div>
 </section>
@@ -1487,12 +1489,39 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
       prevBtn.disabled = track.scrollLeft <= 2;
       nextBtn.disabled = max <= 2 || track.scrollLeft >= max;
     }
+    function updateActiveCard() {
+      const cards = track.querySelectorAll('.facility-item');
+      if (!cards.length) return;
+      const trackRect = track.getBoundingClientRect();
+      const centerX = trackRect.left + trackRect.width / 2;
+      let closest = null, closestDist = Infinity;
+      cards.forEach(card => {
+        const r = card.getBoundingClientRect();
+        const dist = Math.abs((r.left + r.width / 2) - centerX);
+        if (dist < closestDist) { closestDist = dist; closest = card; }
+      });
+      cards.forEach(c => c.classList.toggle('is-active', c === closest));
+    }
+    let scrollTicking = false;
+    function onTrackScroll() {
+      if (scrollTicking) return;
+      scrollTicking = true;
+      requestAnimationFrame(() => {
+        updateNavState();
+        updateActiveCard();
+        scrollTicking = false;
+      });
+    }
+    function refreshFacilitiesCarousel() {
+      updateNavState();
+      updateActiveCard();
+    }
     prevBtn.addEventListener('click', () => track.scrollBy({ left: -cardStep(), behavior: 'smooth' }));
     nextBtn.addEventListener('click', () => track.scrollBy({ left: cardStep(), behavior: 'smooth' }));
-    track.addEventListener('scroll', updateNavState, { passive: true });
-    window.addEventListener('resize', updateNavState);
-    updateNavState();
-    window.__refreshFacilitiesNav = updateNavState;
+    track.addEventListener('scroll', onTrackScroll, { passive: true });
+    window.addEventListener('resize', refreshFacilitiesCarousel);
+    refreshFacilitiesCarousel();
+    window.__refreshFacilitiesNav = refreshFacilitiesCarousel;
   })();
 })();
 </script>

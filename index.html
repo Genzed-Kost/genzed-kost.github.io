@@ -851,6 +851,66 @@ footer {
   *, .reveal { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
 
+/* ===== ADMIN EDIT MODE (di-inject via JS, cuma muncul kalau admin login) ===== */
+.admin-edit-fab {
+  position: fixed; bottom: 20px; right: 20px; z-index: 300;
+  background: var(--accent); color: #111; border: none; border-radius: 100px;
+  padding: 12px 20px; font-weight: 700; font-size: .82rem; cursor: pointer;
+  box-shadow: 0 12px 32px rgba(0,0,0,.45); font-family: inherit;
+}
+.admin-edit-fab.on { background: #fff; }
+.admin-edit-pencil {
+  display: none; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(200,240,75,.14); border: 1px solid rgba(200,240,75,.3);
+  color: var(--accent); cursor: pointer; font-size: .85rem; flex-shrink: 0;
+}
+body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
+.admin-modal-overlay {
+  position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,.72);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.admin-modal-overlay.open { opacity: 1; pointer-events: all; }
+.admin-modal-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  max-width: 540px; width: 100%; max-height: 84vh; display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.admin-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.admin-modal-header h3 { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; }
+.admin-modal-close { background: none; border: none; color: var(--muted); font-size: 1rem; cursor: pointer; }
+.admin-modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
+.admin-modal-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
+.admin-modal-msg { font-size: .76rem; color: var(--muted); }
+.admin-modal-msg.err { color: #e8552f; }
+.admin-field { margin-bottom: 12px; display: flex; flex-direction: column; gap: 5px; }
+.admin-field label { font-size: .76rem; color: var(--muted); }
+.admin-field input {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 9px 12px; color: var(--text); font: inherit; font-size: .85rem;
+}
+.admin-row-add {
+  background: none; border: 1px dashed var(--border); border-radius: 10px;
+  color: var(--accent); padding: 8px; width: 100%; cursor: pointer; font-size: .82rem;
+  margin-top: 4px; font-family: inherit;
+}
+.admin-list-row { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.admin-list-row:last-child { border-bottom: none; }
+.admin-list-thumb { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
+.admin-list-input {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 10px; color: var(--text); font: inherit; font-size: .8rem;
+}
+.admin-list-icon-input { width: 48px; text-align: center; }
+.admin-list-fields { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.admin-list-fields.row { flex-direction: row; flex-wrap: wrap; }
+.admin-list-fields.row .admin-list-input { flex: 1 1 100px; }
+.admin-list-actions { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+.admin-list-actions button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: .78rem; padding: 2px 4px; font-family: inherit; }
+.admin-list-actions button.danger { color: #e8552f; }
+.admin-list-actions button:disabled { opacity: .3; cursor: default; }
+.admin-upload-label { font-size: .62rem; color: var(--accent); cursor: pointer; text-align: center; background: none; border: none; font-family: inherit; }
 </style>
 </head>
 <body>
@@ -1421,10 +1481,13 @@ footer {
     `).join('');
   }
 
+  let cachedContent = null;
+
   (async function applyLandingContent() {
     try {
       const { data, error } = await supabase.from('landing_content').select('*').eq('id', true).maybeSingle();
       if (error || !data) return;
+      cachedContent = data;
 
       const stats = data.stats || {};
       const setStat = (id, val) => { if (val) { const el = document.getElementById(id); if (el) el.textContent = val; } };
@@ -1486,6 +1549,293 @@ footer {
       }
     } catch {
       // Gagal fetch/render nggak boleh nge-break landing page — biarin konten default tampil.
+    }
+  })();
+
+  /* ═══ MODE EDIT ADMIN — inline langsung di landing page ═══
+     Kalau admin lagi login di portal (session Supabase kesimpen di localStorage,
+     origin sama jadi kebaca di sini juga), muncul tombol "Mode Edit" + ikon pensil
+     di tiap section. Admin edit di tempat, simpan, halaman reload buat nampilin
+     hasil final (skalian jamin section yang dikosongin balik ke default statis). */
+
+  const GALLERY_BUCKET = 'landing-gallery';
+
+  function ensureAdminModalShell() {
+    if (document.getElementById('adminModalOverlay')) return;
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `
+      <div class="admin-modal-overlay" id="adminModalOverlay">
+        <div class="admin-modal-card">
+          <div class="admin-modal-header">
+            <h3 id="adminModalTitle"></h3>
+            <button class="admin-modal-close" id="adminModalClose" type="button" aria-label="Tutup">✕</button>
+          </div>
+          <div class="admin-modal-body" id="adminModalBody"></div>
+          <div class="admin-modal-footer">
+            <span class="admin-modal-msg" id="adminModalMsg"></span>
+            <button class="btn-primary" id="adminModalSave" type="button">Simpan</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(wrap.firstElementChild);
+    document.getElementById('adminModalClose').addEventListener('click', closeAdminModal);
+    document.getElementById('adminModalOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'adminModalOverlay') closeAdminModal();
+    });
+  }
+
+  function openAdminModal(title) {
+    document.getElementById('adminModalTitle').textContent = title;
+    const msg = document.getElementById('adminModalMsg');
+    msg.textContent = '';
+    msg.classList.remove('err');
+    document.getElementById('adminModalSave').disabled = false;
+    document.getElementById('adminModalOverlay').classList.add('open');
+  }
+
+  function closeAdminModal() {
+    document.getElementById('adminModalOverlay').classList.remove('open');
+  }
+
+  async function saveAndReload(patch) {
+    const msg = document.getElementById('adminModalMsg');
+    const saveBtn = document.getElementById('adminModalSave');
+    saveBtn.disabled = true;
+    msg.classList.remove('err');
+    msg.textContent = 'Menyimpan...';
+    const { error } = await supabase.from('landing_content').update(patch).eq('id', true);
+    if (error) {
+      msg.textContent = 'Gagal: ' + error.message;
+      msg.classList.add('err');
+      saveBtn.disabled = false;
+      return;
+    }
+    msg.textContent = 'Tersimpan! Memuat ulang halaman...';
+    setTimeout(() => location.reload(), 600);
+  }
+
+  function openStatsEditor(content) {
+    ensureAdminModalShell();
+    openAdminModal('Statistik Hero');
+    const stats = content.stats || {};
+    document.getElementById('adminModalBody').innerHTML = `
+      <div class="admin-field"><label>Penghuni Aktif</label><input id="fldStatsPenghuni" value="${escapeHtml(stats.penghuni_aktif || '')}" placeholder="120+"></div>
+      <div class="admin-field"><label>Rating</label><input id="fldStatsRating" value="${escapeHtml(stats.rating || '')}" placeholder="4.8"></div>
+      <div class="admin-field"><label>Berdiri Sejak</label><input id="fldStatsBerdiri" value="${escapeHtml(stats.berdiri_sejak || '')}" placeholder="3thn"></div>
+    `;
+    document.getElementById('adminModalSave').onclick = () => {
+      saveAndReload({
+        stats: {
+          penghuni_aktif: document.getElementById('fldStatsPenghuni').value.trim(),
+          rating: document.getElementById('fldStatsRating').value.trim(),
+          berdiri_sejak: document.getElementById('fldStatsBerdiri').value.trim(),
+        },
+      });
+    };
+  }
+
+  function openMapsEditor(content) {
+    ensureAdminModalShell();
+    openAdminModal('Lokasi Google Maps');
+    document.getElementById('adminModalBody').innerHTML = `
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;">Buka lokasi kost lo di Google Maps, tekan "Bagikan" → salin link, tempel di sini.</p>
+      <div class="admin-field"><label>Link Google Maps</label><input id="fldMapsUrl" value="${escapeHtml(content.maps_url || '')}" placeholder="https://maps.app.goo.gl/..."></div>
+    `;
+    document.getElementById('adminModalSave').onclick = () => {
+      const url = document.getElementById('fldMapsUrl').value.trim();
+      saveAndReload({ maps_url: url || null });
+    };
+  }
+
+  const LIST_EDITOR_CONFIGS = {
+    nearby: {
+      title: 'Lokasi Strategis (jarak ke tempat penting)',
+      hint: 'Buat jarak rute (bukan garis lurus), buka Google Maps sendiri → "Rute" dari tempat itu ke kost lo, lihat jaraknya, ketik hasilnya di sini (mis. "500 m").',
+      hasImage: false,
+      empty: () => ({ icon: '📍', label: '', sublabel: '', distance: '' }),
+      fields: [
+        { key: 'icon', placeholder: '📍', width: 44, center: true },
+        { key: 'label', placeholder: 'Nama tempat' },
+        { key: 'sublabel', placeholder: 'Kategori' },
+        { key: 'distance', placeholder: '500 m', width: 80 },
+      ],
+    },
+    facilities: {
+      title: 'Fasilitas',
+      hint: 'Isi/ubah daftar fasilitas kost. Upload foto asli (opsional) — kalau nggak diupload, pakai ikon emoji aja.',
+      hasImage: true,
+      empty: () => ({ icon: '✨', image_path: null, title: '', desc: '' }),
+      fields: [
+        { key: 'title', placeholder: 'Judul' },
+        { key: 'desc', placeholder: 'Deskripsi singkat' },
+      ],
+    },
+    keunggulan: {
+      title: 'Keunggulan Kami',
+      hint: 'Isi/ubah daftar keunggulan ("Pilihan Kost Nyaman"). Upload foto asli (opsional) — kalau nggak diupload, pakai ikon emoji aja.',
+      hasImage: true,
+      empty: () => ({ icon: '✨', image_path: null, title: '', desc: '' }),
+      fields: [
+        { key: 'title', placeholder: 'Judul' },
+        { key: 'desc', placeholder: 'Deskripsi singkat' },
+      ],
+    },
+    penghuni: {
+      title: 'Penghuni Kost',
+      hint: 'Teks aja, nggak ada foto — nama, umur, kegiatan, dan sepatah kata dari penghuni.',
+      hasImage: false,
+      empty: () => ({ name: '', age: '', activity: '', quote: '' }),
+      fields: [
+        { key: 'name', placeholder: 'Nama' },
+        { key: 'age', placeholder: 'Umur', width: 60 },
+        { key: 'activity', placeholder: 'Kegiatan' },
+        { key: 'quote', placeholder: 'Sepatah kata' },
+      ],
+    },
+  };
+
+  let listEditorState = null;
+
+  function openListEditor(kind, content) {
+    ensureAdminModalShell();
+    const cfg = LIST_EDITOR_CONFIGS[kind];
+    listEditorState = { kind, list: JSON.parse(JSON.stringify(content[kind] || [])) };
+    openAdminModal(cfg.title);
+    renderListEditorBody();
+    document.getElementById('adminModalSave').onclick = () => {
+      saveAndReload({ [kind]: listEditorState.list });
+    };
+  }
+
+  function renderListEditorBody() {
+    const cfg = LIST_EDITOR_CONFIGS[listEditorState.kind];
+    const list = listEditorState.list;
+    const body = document.getElementById('adminModalBody');
+
+    const rows = list.map((item, i) => {
+      const fieldsHtml = cfg.fields.map((f) => `
+        <input data-i="${i}" data-field="${f.key}" class="admin-list-input" style="${f.width ? `width:${f.width}px;flex:none;` : 'flex:1 1 100px;'}${f.center ? 'text-align:center;' : ''}" value="${escapeHtml(item[f.key] || '')}" placeholder="${escapeHtml(f.placeholder)}">
+      `).join('');
+      const thumbHtml = cfg.hasImage ? `
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:56px;flex-shrink:0;">
+          ${item.image_path
+            ? `<img class="admin-list-thumb" src="${escapeHtml(publicImageUrl(item.image_path))}" alt="">`
+            : `<input data-i="${i}" data-field="icon" class="admin-list-input admin-list-icon-input" value="${escapeHtml(item.icon || '')}" placeholder="✨">`
+          }
+          <label class="admin-upload-label">${item.image_path ? 'Ganti' : '+ Foto'}<input type="file" accept="image/*" hidden data-i="${i}" class="admin-list-upload"></label>
+          ${item.image_path ? `<button type="button" class="admin-upload-label" data-i="${i}" data-action="remove-image">Hapus foto</button>` : ''}
+        </div>
+      ` : '';
+      return `
+        <div class="admin-list-row">
+          ${thumbHtml}
+          <div class="admin-list-fields ${cfg.hasImage ? '' : 'row'}">${fieldsHtml}</div>
+          <div class="admin-list-actions">
+            <button type="button" data-i="${i}" data-action="up" ${i === 0 ? 'disabled' : ''} title="Naikkan urutan">↑</button>
+            <button type="button" data-i="${i}" data-action="down" ${i === list.length - 1 ? 'disabled' : ''} title="Turunkan urutan">↓</button>
+            <button type="button" data-i="${i}" data-action="remove" class="danger">Hapus</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    body.innerHTML = `
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:12px;">${escapeHtml(cfg.hint)}</p>
+      ${list.length === 0 ? `<p style="font-size:.82rem;color:var(--muted);margin-bottom:10px;">Belum ada item — landing page pakai konten default.</p>` : rows}
+      <button type="button" class="admin-row-add" id="adminListAddBtn">+ Tambah</button>
+    `;
+
+    body.querySelectorAll('.admin-list-input').forEach((inp) => {
+      inp.addEventListener('input', (e) => {
+        listEditorState.list[Number(e.target.dataset.i)][e.target.dataset.field] = e.target.value;
+      });
+    });
+
+    body.querySelectorAll('.admin-list-upload').forEach((inp) => {
+      inp.addEventListener('change', async (e) => {
+        const i = Number(e.target.dataset.i);
+        const file = e.target.files[0];
+        if (!file) return;
+        const msg = document.getElementById('adminModalMsg');
+        msg.textContent = 'Upload foto...';
+        msg.classList.remove('err');
+        const path = `${crypto.randomUUID()}-${file.name}`;
+        const { error } = await supabase.storage.from(GALLERY_BUCKET).upload(path, file);
+        if (error) {
+          msg.textContent = 'Gagal upload: ' + error.message;
+          msg.classList.add('err');
+          return;
+        }
+        listEditorState.list[i].image_path = path;
+        msg.textContent = '';
+        renderListEditorBody();
+      });
+    });
+
+    body.querySelectorAll('[data-action]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.i);
+        const action = btn.dataset.action;
+        if (action === 'remove') listEditorState.list.splice(i, 1);
+        else if (action === 'up' && i > 0) [listEditorState.list[i - 1], listEditorState.list[i]] = [listEditorState.list[i], listEditorState.list[i - 1]];
+        else if (action === 'down' && i < listEditorState.list.length - 1) [listEditorState.list[i + 1], listEditorState.list[i]] = [listEditorState.list[i], listEditorState.list[i + 1]];
+        else if (action === 'remove-image') listEditorState.list[i].image_path = null;
+        renderListEditorBody();
+      });
+    });
+
+    const addBtn = document.getElementById('adminListAddBtn');
+    if (addBtn) addBtn.addEventListener('click', () => {
+      listEditorState.list.push(cfg.empty());
+      renderListEditorBody();
+    });
+  }
+
+  function addEditPencil(anchorEl, onClick) {
+    if (!anchorEl) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'admin-edit-pencil';
+    btn.title = 'Edit';
+    btn.textContent = '✏️';
+    btn.addEventListener('click', onClick);
+    anchorEl.insertAdjacentElement('afterend', btn);
+  }
+
+  function setupAdminEditMode(content) {
+    ensureAdminModalShell();
+
+    const fab = document.createElement('button');
+    fab.type = 'button';
+    fab.className = 'admin-edit-fab';
+    fab.textContent = '✏️ Mode Edit';
+    fab.addEventListener('click', () => {
+      const on = document.body.classList.toggle('admin-edit-on');
+      fab.classList.toggle('on', on);
+      fab.textContent = on ? '✓ Mode Edit Aktif' : '✏️ Mode Edit';
+    });
+    document.body.appendChild(fab);
+
+    addEditPencil(document.querySelector('.hero-stats'), () => openStatsEditor(cachedContent));
+    addEditPencil(document.querySelector('#fitur .section-header .section-sub'), () => openListEditor('keunggulan', cachedContent));
+    addEditPencil(document.querySelector('#fasilitas .section-header .section-sub'), () => openListEditor('facilities', cachedContent));
+    addEditPencil(document.querySelector('#lokasi .section-sub'), () => openListEditor('nearby', cachedContent));
+    addEditPencil(document.querySelector('#lokasi .map-open-btn'), () => openMapsEditor(cachedContent));
+    addEditPencil(document.querySelector('#testimoni .section-header .section-sub'), () => openListEditor('penghuni', cachedContent));
+  }
+
+  (async function initAdminEditModeEntry() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
+      if (profile?.role !== 'admin') return;
+      for (let i = 0; i < 30 && !cachedContent; i++) await new Promise((r) => setTimeout(r, 100));
+      if (!cachedContent) return;
+      setupAdminEditMode(cachedContent);
+    } catch {
+      // Gagal cek admin nggak boleh nge-break landing page buat pengunjung biasa.
     }
   })();
 </script>

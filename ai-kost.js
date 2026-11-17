@@ -288,7 +288,6 @@ background:linear-gradient(120deg,#7C3AED,#DB2777 55%,#F97316);box-shadow:0 14px
 transition:transform .2s cubic-bezier(.22,1,.36,1),box-shadow .2s}\
 .aik-fab:hover{transform:translateY(-3px);box-shadow:0 18px 40px -10px rgba(219,39,119,.85)}\
 .aik-fab-ico{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:1rem}\
-body:has(.admin-edit-fab) .aik-fab{bottom:80px}\
 .aik-panel{position:fixed;right:20px;bottom:20px;z-index:320;width:min(380px,calc(100vw - 32px));height:min(580px,calc(100svh - 40px));\
 display:flex;flex-direction:column;overflow:hidden;border-radius:22px;color:#1C1633;font-family:'DM Sans',system-ui,sans-serif;\
 background:linear-gradient(#fff,#fff) padding-box,linear-gradient(120deg,#7C3AED,#DB2777 55%,#F97316) border-box;border:1.5px solid transparent;\

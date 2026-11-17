@@ -881,66 +881,119 @@ footer {
   *, .reveal { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
 
-/* ===== ADMIN EDIT MODE (di-inject via JS, cuma muncul kalau admin login) ===== */
-.admin-edit-fab {
-  position: fixed; bottom: 20px; right: 20px; z-index: 300;
-  background: var(--accent); color: #111; border: none; border-radius: 100px;
-  padding: 12px 20px; font-weight: 700; font-size: .82rem; cursor: pointer;
-  box-shadow: 0 12px 28px -10px rgba(219,39,119,.55); font-family: inherit;
+/* ===== EDITOR LANDING PAGE (cuma muncul kalau admin login) ===== */
+.ae-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 260; height: 44px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 0 5vw; background: #1C1633; color: #EDE9FE; font-size: .8rem;
+  box-shadow: 0 2px 12px rgba(28,22,51,.25);
 }
-.admin-edit-fab.on { background: #fff; }
-.admin-edit-pencil {
-  display: none; align-items: center; justify-content: center;
-  width: 30px; height: 30px; border-radius: 50%;
-  background: rgba(192,132,252,.14); border: 1px solid rgba(192,132,252,.3);
-  color: var(--accent); cursor: pointer; font-size: .85rem; flex-shrink: 0;
+body.ae-has-bar { padding-top: 44px; }
+body.ae-has-bar nav { top: 44px; }
+.ae-bar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ae-bar-left span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ae-bar-badge { background: var(--grad); color: #fff; font-weight: 700; font-size: .66rem; letter-spacing: .08em; padding: 3px 8px; border-radius: 6px; }
+.ae-bar-right { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+.ae-bar-link { color: #C4B5FD; text-decoration: none; font-weight: 600; }
+.ae-bar-link:hover { color: #fff; }
+.ae-switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; user-select: none; }
+.ae-switch input { position: absolute; opacity: 0; pointer-events: none; }
+.ae-switch-track { width: 34px; height: 20px; border-radius: 20px; background: #4C4470; position: relative; transition: background .2s; }
+.ae-switch-track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .2s var(--ease-out); }
+.ae-switch input:checked + .ae-switch-track { background: #DB2777; }
+.ae-switch input:checked + .ae-switch-track::after { transform: translateX(14px); }
+.ae-switch input:focus-visible + .ae-switch-track { outline: 2px solid #C4B5FD; outline-offset: 2px; }
+@media (max-width: 640px) { .ae-bar-left span:last-child, .ae-bar-link span { display: none; } }
+
+/* Section yang bisa diedit */
+.ae-target { position: relative; }
+body.ae-on .ae-target { outline: 2px dashed rgba(147,51,234,.35); outline-offset: -8px; transition: outline-color .2s, background-color .2s; }
+body.ae-on .ae-target:hover { outline-color: rgba(219,39,119,.75); }
+.ae-edit-btn {
+  display: none; position: absolute; top: 16px; right: 16px; z-index: 30;
+  align-items: center; gap: 7px; padding: 8px 14px; border-radius: 10px; border: none;
+  background: #1C1633; color: #fff; font: 600 .8rem 'DM Sans', system-ui, sans-serif; cursor: pointer;
+  box-shadow: 0 10px 24px -10px rgba(28,22,51,.6); transition: transform .15s, background .2s;
 }
-body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
-.admin-modal-overlay {
-  position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,.72);
-  display: flex; align-items: center; justify-content: center; padding: 20px;
-  opacity: 0; pointer-events: none; transition: opacity .25s;
+.ae-edit-btn svg { width: 15px; height: 15px; }
+.hero-stats.ae-target .ae-edit-btn { top: 50%; right: 0; transform: translateY(-50%); }
+.hero-stats.ae-target .ae-edit-btn:hover { transform: translateY(calc(-50% - 1px)); }
+body.ae-on .hero-stats.ae-target { outline-offset: 6px; border-radius: 6px; }
+.ae-edit-btn:hover { background: #DB2777; transform: translateY(-1px); }
+body.ae-on .ae-edit-btn { display: inline-flex; }
+
+/* Panel samping */
+.ae-backdrop { position: fixed; inset: 0; z-index: 400; background: rgba(28,22,51,.4); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity .25s; }
+.ae-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 401; width: min(520px, 100vw);
+  display: flex; flex-direction: column; background: #fff; color: var(--text);
+  box-shadow: -24px 0 60px -20px rgba(28,22,51,.35);
+  transform: translateX(100%); transition: transform .3s var(--ease-out);
+  font-family: 'DM Sans', system-ui, sans-serif;
 }
-.admin-modal-overlay.open { opacity: 1; pointer-events: all; }
-.admin-modal-card {
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
-  max-width: 540px; width: 100%; max-height: 84vh; display: flex; flex-direction: column;
-  overflow: hidden;
+.ae-open .ae-backdrop { opacity: 1; pointer-events: auto; }
+.ae-open .ae-drawer { transform: none; }
+.ae-drawer-head { display: flex; align-items: flex-start; gap: 12px; padding: 22px 24px 18px; border-bottom: 1px solid var(--border); }
+.ae-eyebrow { font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-2); margin-bottom: 4px; }
+.ae-drawer-head h3 { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700; line-height: 1.25; }
+.ae-desc { font-size: .82rem; color: var(--muted); margin-top: 6px; line-height: 1.55; }
+.ae-desc a { color: var(--accent-2); font-weight: 600; }
+.ae-icon-btn { flex-shrink: 0; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px; border: 1px solid var(--border); background: #fff; color: var(--muted); cursor: pointer; }
+.ae-icon-btn svg { width: 16px; height: 16px; }
+.ae-icon-btn:hover:not(:disabled) { background: var(--surface2); color: var(--text); }
+.ae-icon-btn:disabled { opacity: .35; cursor: default; }
+.ae-icon-btn.danger:hover:not(:disabled) { background: #FEF2F2; color: #DC2626; border-color: #FECACA; }
+.ae-drawer-body { flex: 1; overflow-y: auto; padding: 20px 24px; background: #FBFAFF; }
+.ae-drawer-foot { display: flex; align-items: center; gap: 10px; padding: 14px 24px; border-top: 1px solid var(--border); background: #fff; }
+.ae-status { flex: 1; font-size: .8rem; color: var(--muted); min-width: 0; }
+.ae-status.err { color: #DC2626; }
+.ae-status.ok { color: #0F766E; font-weight: 600; }
+.ae-btn { border: none; border-radius: 10px; padding: 10px 18px; font: 600 .86rem 'DM Sans', system-ui, sans-serif; cursor: pointer; transition: background .2s, opacity .2s; }
+.ae-btn:disabled { opacity: .5; cursor: default; }
+.ae-btn-ghost { background: #fff; color: var(--text); border: 1px solid var(--border); }
+.ae-btn-ghost:hover:not(:disabled) { background: var(--surface2); }
+.ae-btn-primary { background: #1C1633; color: #fff; }
+.ae-btn-primary:hover:not(:disabled) { background: #DB2777; }
+
+/* Form */
+.ae-group { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+.ae-group-title { font-size: .78rem; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+.ae-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.ae-field:last-child { margin-bottom: 0; }
+.ae-field label { font-size: .76rem; font-weight: 600; color: #3F3858; }
+.ae-field .ae-help { font-size: .72rem; color: var(--muted); }
+.ae-input {
+  width: 100%; border: 1px solid #DDD5F0; border-radius: 10px; background: #fff; color: var(--text);
+  padding: 9px 12px; font: 400 .88rem 'DM Sans', system-ui, sans-serif; transition: border-color .15s, box-shadow .15s;
 }
-.admin-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.admin-modal-header h3 { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; }
-.admin-modal-close { background: none; border: none; color: var(--muted); font-size: 1rem; cursor: pointer; }
-.admin-modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
-.admin-modal-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
-.admin-modal-msg { font-size: .76rem; color: var(--muted); }
-.admin-modal-msg.err { color: #e8552f; }
-.admin-field { margin-bottom: 12px; display: flex; flex-direction: column; gap: 5px; }
-.admin-field label { font-size: .76rem; color: var(--muted); }
-.admin-field input {
-  background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
-  padding: 9px 12px; color: var(--text); font: inherit; font-size: .85rem;
-}
-.admin-row-add {
-  background: none; border: 1px dashed var(--border); border-radius: 10px;
-  color: var(--accent); padding: 8px; width: 100%; cursor: pointer; font-size: .82rem;
-  margin-top: 4px; font-family: inherit;
-}
-.admin-list-row { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); }
-.admin-list-row:last-child { border-bottom: none; }
-.admin-list-thumb { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
-.admin-list-input {
-  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-  padding: 7px 10px; color: var(--text); font: inherit; font-size: .8rem;
-}
-.admin-list-icon-input { width: 48px; text-align: center; }
-.admin-list-fields { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.admin-list-fields.row { flex-direction: row; flex-wrap: wrap; }
-.admin-list-fields.row .admin-list-input { flex: 1 1 100px; }
-.admin-list-actions { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
-.admin-list-actions button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: .78rem; padding: 2px 4px; font-family: inherit; }
-.admin-list-actions button.danger { color: #e8552f; }
-.admin-list-actions button:disabled { opacity: .3; cursor: default; }
-.admin-upload-label { font-size: .62rem; color: var(--accent); cursor: pointer; text-align: center; background: none; border: none; font-family: inherit; }
+textarea.ae-input { resize: vertical; min-height: 64px; line-height: 1.5; }
+.ae-input:focus { outline: none; border-color: #9333EA; box-shadow: 0 0 0 3px rgba(147,51,234,.14); }
+.ae-input.invalid { border-color: #DC2626; box-shadow: 0 0 0 3px rgba(220,38,38,.12); }
+.ae-row { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+.ae-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 480px) { .ae-row, .ae-row-3 { grid-template-columns: 1fr; } }
+
+/* Kartu item daftar */
+.ae-item { background: #fff; border: 1px solid var(--border); border-radius: 14px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(28,22,51,.04); }
+.ae-item-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 14px; border-bottom: 1px solid #F1EDFA; background: #FDFCFF; }
+.ae-item-num { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-size: .7rem; font-weight: 700; background: var(--surface2); color: var(--accent); flex-shrink: 0; }
+.ae-item-title { flex: 1; min-width: 0; font-size: .84rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ae-item-title.placeholder { color: var(--muted); font-weight: 500; font-style: italic; }
+.ae-item-tools { display: flex; gap: 4px; }
+.ae-item-tools .ae-icon-btn { width: 30px; height: 30px; }
+.ae-item-body { padding: 14px; }
+.ae-media { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.ae-media-preview { width: 64px; height: 64px; border-radius: 12px; flex-shrink: 0; display: grid; place-items: center; font-size: 1.8rem; background: var(--surface2); border: 1px solid var(--border); overflow: hidden; }
+.ae-media-preview img { width: 100%; height: 100%; object-fit: cover; }
+.ae-media-actions { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ae-media-actions .ae-btn { padding: 7px 12px; font-size: .78rem; }
+.ae-media-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.ae-inline-field { display: flex; align-items: center; gap: 8px; font-size: .74rem; font-weight: 600; color: #3F3858; }
+.ae-add { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 12px; border: 1.5px dashed #CFC4EE; background: #fff; color: var(--accent); font: 600 .84rem 'DM Sans', system-ui, sans-serif; cursor: pointer; }
+.ae-add:hover { border-color: var(--accent-2); color: var(--accent-2); background: #FDF7FB; }
+.ae-add svg { width: 16px; height: 16px; }
+.ae-empty { text-align: center; color: var(--muted); font-size: .84rem; padding: 18px 10px 22px; }
+.ae-count { font-size: .76rem; color: var(--muted); margin-bottom: 12px; }
 
 /* ===== TEMA TERANG (putih + gradien ungu → pink → oranye) ===== */
 :root {
@@ -995,7 +1048,7 @@ nav.scrolled { background: rgba(255,255,255,.96); box-shadow: 0 6px 24px -12px r
 .floating-tag { background: rgba(255,255,255,.92); border-color: rgba(147,51,234,.18); box-shadow: var(--shadow-md) !important; }
 
 /* Tombol */
-.btn-primary, .popular-badge, .map-hover-label, .admin-edit-fab {
+.btn-primary, .popular-badge, .map-hover-label {
   background: var(--grad); color: #fff;
 }
 .btn-primary { box-shadow: 0 10px 24px -10px rgba(219,39,119,.6); background-size: 160% 100%; transition: transform .15s var(--ease-out), box-shadow .2s, background-position .4s; }
@@ -1003,7 +1056,6 @@ nav.scrolled { background: rgba(255,255,255,.96); box-shadow: 0 6px 24px -12px r
 .btn-ghost, .btn-login-nav { background: #fff; border-color: var(--border); }
 .btn-ghost:hover, .btn-login-nav:hover { border-color: var(--accent-2); background: #FDF2F8; }
 .nav-clock { color: #0E7490; background: rgba(8,145,178,.07); border-color: rgba(8,145,178,.22); }
-.admin-edit-fab.on { background: #1C1633; }
 
 /* Marquee */
 .marquee-wrap { background: var(--grad); }
@@ -1104,10 +1156,6 @@ footer      { background: #F8F6FF; }
 #testimoni .section-sub a, .testimonial-cta-login a { color: var(--accent-2); font-weight: 600; }
 .testimonial-cta-login { font-size: .82rem; color: var(--muted); }
 
-/* Mode edit admin */
-.admin-edit-pencil { color: var(--accent-2); background: #FDF2F8; border-color: rgba(219,39,119,.3); }
-.admin-modal-card { background: #fff; box-shadow: 0 30px 80px -20px rgba(28,22,51,.35); }
-.admin-field input, .admin-list-input { background: #fff; }
 </style>
 </head>
 <body>
@@ -1665,7 +1713,7 @@ footer      { background: #F8F6FF; }
     // Klik kartu/gambar: kartu samping -> pindah ke kartu itu; kartu tengah -> lanjut ke kartu berikutnya.
     // Pakai delegasi karena kartu bisa di-render ulang dari data admin.
     track.addEventListener('click', (e) => {
-      if (e.target.closest('a, button, input, .admin-edit-pencil')) return;
+      if (e.target.closest('a, button, input, .ae-edit-btn')) return;
       const card = e.target.closest(cardSelector);
       if (!card || !track.contains(card)) return;
       const i = cards().indexOf(card);
@@ -1908,288 +1956,361 @@ footer      { background: #F8F6FF; }
     }
   })();
 
-  /* ═══ MODE EDIT ADMIN — inline langsung di landing page ═══
-     Kalau admin lagi login di portal (session Supabase kesimpen di localStorage,
-     origin sama jadi kebaca di sini juga), muncul tombol "Mode Edit" + ikon pensil
-     di tiap section. Admin edit di tempat, simpan, halaman reload buat nampilin
-     hasil final (skalian jamin section yang dikosongin balik ke default statis). */
+  /* ═══ EDITOR LANDING PAGE (khusus admin) ═══
+     Kalau admin login di portal (session Supabase kebaca karena satu origin), muncul:
+       • bar admin di atas dengan sakelar "Mode edit" + link ke panel admin,
+       • tombol "Edit …" di tiap section yang bisa diubah (saat mode edit aktif),
+       • panel samping berisi form lengkap (label, validasi, upload foto, urutan item).
+     Simpan → tulis ke tabel landing_content → halaman dimuat ulang untuk menampilkan hasil. */
 
   const GALLERY_BUCKET = 'landing-gallery';
+  const AE_MODE_KEY = 'genzed_admin_edit_mode';
+  const AE_ICON = {
+    edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+    close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+    up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>',
+    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  };
 
-  function ensureAdminModalShell() {
-    if (document.getElementById('adminModalOverlay')) return;
-    const wrap = document.createElement('div');
-    wrap.innerHTML = `
-      <div class="admin-modal-overlay" id="adminModalOverlay">
-        <div class="admin-modal-card">
-          <div class="admin-modal-header">
-            <h3 id="adminModalTitle"></h3>
-            <button class="admin-modal-close" id="adminModalClose" type="button" aria-label="Tutup">✕</button>
-          </div>
-          <div class="admin-modal-body" id="adminModalBody"></div>
-          <div class="admin-modal-footer">
-            <span class="admin-modal-msg" id="adminModalMsg"></span>
-            <button class="btn-primary" id="adminModalSave" type="button">Simpan</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(wrap.firstElementChild);
-    document.getElementById('adminModalClose').addEventListener('click', closeAdminModal);
-    document.getElementById('adminModalOverlay').addEventListener('click', (e) => {
-      if (e.target.id === 'adminModalOverlay') closeAdminModal();
-    });
-  }
-
-  function openAdminModal(title) {
-    document.getElementById('adminModalTitle').textContent = title;
-    const msg = document.getElementById('adminModalMsg');
-    msg.textContent = '';
-    msg.classList.remove('err');
-    document.getElementById('adminModalSave').disabled = false;
-    document.getElementById('adminModalOverlay').classList.add('open');
-  }
-
-  function closeAdminModal() {
-    document.getElementById('adminModalOverlay').classList.remove('open');
-  }
-
-  async function saveAndReload(patch) {
-    const msg = document.getElementById('adminModalMsg');
-    const saveBtn = document.getElementById('adminModalSave');
-    saveBtn.disabled = true;
-    msg.classList.remove('err');
-    msg.textContent = 'Menyimpan...';
-    const { error } = await supabase.from('landing_content').update(patch).eq('id', true);
-    if (error) {
-      msg.textContent = 'Gagal: ' + error.message;
-      msg.classList.add('err');
-      saveBtn.disabled = false;
-      return;
-    }
-    msg.textContent = 'Tersimpan! Memuat ulang halaman...';
-    setTimeout(() => location.reload(), 600);
-  }
-
-  function openStatsEditor(content) {
-    ensureAdminModalShell();
-    openAdminModal('Statistik Hero');
-    const stats = content.stats || {};
-    document.getElementById('adminModalBody').innerHTML = `
-      <div class="admin-field"><label>Penghuni Kamar Kost</label><input id="fldStatsPenghuni" value="${escapeHtml(stats.penghuni_aktif || '')}" placeholder="120+"></div>
-      <div class="admin-field"><label>Rating</label><input id="fldStatsRating" value="${escapeHtml(stats.rating || '')}" placeholder="4.8"></div>
-      <div class="admin-field"><label>Berdiri Sejak</label><input id="fldStatsBerdiri" value="${escapeHtml(stats.berdiri_sejak || '')}" placeholder="3thn"></div>
-    `;
-    document.getElementById('adminModalSave').onclick = () => {
-      saveAndReload({
-        stats: {
-          penghuni_aktif: document.getElementById('fldStatsPenghuni').value.trim(),
-          rating: document.getElementById('fldStatsRating').value.trim(),
-          berdiri_sejak: document.getElementById('fldStatsBerdiri').value.trim(),
-        },
-      });
-    };
-  }
-
-  function openMapsEditor(content) {
-    ensureAdminModalShell();
-    openAdminModal('Lokasi Google Maps');
-    document.getElementById('adminModalBody').innerHTML = `
-      <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;">Buka lokasi kost lo di Google Maps, tekan "Bagikan" → salin link, tempel di sini.</p>
-      <div class="admin-field"><label>Link Google Maps</label><input id="fldMapsUrl" value="${escapeHtml(content.maps_url || '')}" placeholder="https://maps.app.goo.gl/..."></div>
-    `;
-    document.getElementById('adminModalSave').onclick = () => {
-      const url = document.getElementById('fldMapsUrl').value.trim();
-      saveAndReload({ maps_url: url || null });
-    };
-  }
-
-  const LIST_EDITOR_CONFIGS = {
-    nearby: {
-      title: 'Lokasi Strategis (jarak ke tempat penting)',
-      hint: 'Buat jarak rute (bukan garis lurus), buka Google Maps sendiri → "Rute" dari tempat itu ke kost lo, lihat jaraknya, ketik hasilnya di sini (mis. "500 m").',
-      hasImage: false,
-      empty: () => ({ icon: '📍', label: '', sublabel: '', distance: '' }),
+  // Definisi tiap editor: field, teks bantuan, validasi.
+  const AE_EDITORS = {
+    stats: {
+      section: '#hero .hero-stats', button: 'Edit statistik',
+      title: 'Statistik hero', desc: 'Tiga angka di bawah judul utama. Kosongkan kolom untuk memakai angka bawaan.',
+      read: (c) => ({ ...(c.stats || {}) }),
       fields: [
-        { key: 'icon', placeholder: '📍', width: 44, center: true },
-        { key: 'label', placeholder: 'Nama tempat' },
-        { key: 'sublabel', placeholder: 'Kategori' },
-        { key: 'distance', placeholder: '500 m', width: 80 },
+        { key: 'penghuni_aktif', label: 'Jumlah penghuni', placeholder: '120+' },
+        { key: 'rating', label: 'Rating', placeholder: '4.8' },
+        { key: 'berdiri_sejak', label: 'Berdiri sejak', placeholder: '3thn' },
+      ],
+      layout: 'row-3',
+      toPatch: (v) => ({ stats: { penghuni_aktif: v.penghuni_aktif?.trim() || '', rating: v.rating?.trim() || '', berdiri_sejak: v.berdiri_sejak?.trim() || '' } }),
+    },
+    keunggulan: {
+      section: '#fitur', button: 'Edit keunggulan', list: true,
+      title: 'Keunggulan kami', desc: 'Kartu di slider "Pilihan Kost Nyaman". Foto opsional — tanpa foto, ikon emoji yang dipakai.',
+      hasImage: true, itemLabel: 'title',
+      empty: () => ({ icon: '✨', image_path: null, title: '', desc: '' }),
+      fields: [
+        { key: 'title', label: 'Judul', placeholder: 'Mis. Luas', required: true, max: 40 },
+        { key: 'desc', label: 'Deskripsi', placeholder: 'Satu–dua kalimat singkat', type: 'textarea', max: 160 },
       ],
     },
     facilities: {
-      title: 'Fasilitas',
-      hint: 'Isi/ubah daftar fasilitas kost. Upload foto asli (opsional) — kalau nggak diupload, pakai ikon emoji aja.',
-      hasImage: true,
+      section: '#fasilitas', button: 'Edit fasilitas', list: true,
+      title: 'Fasilitas', desc: 'Kartu di slider "Fasilitas Lengkap". Foto opsional — tanpa foto, ikon emoji yang dipakai.',
+      hasImage: true, itemLabel: 'title',
       empty: () => ({ icon: '✨', image_path: null, title: '', desc: '' }),
       fields: [
-        { key: 'title', placeholder: 'Judul' },
-        { key: 'desc', placeholder: 'Deskripsi singkat' },
+        { key: 'title', label: 'Nama fasilitas', placeholder: 'Mis. WiFi Super Cepat', required: true, max: 40 },
+        { key: 'desc', label: 'Deskripsi', placeholder: 'Mis. Fiber optik 150 Mbps stabil 24 jam.', type: 'textarea', max: 160 },
       ],
     },
-    keunggulan: {
-      title: 'Keunggulan Kami',
-      hint: 'Isi/ubah daftar keunggulan ("Pilihan Kost Nyaman"). Upload foto asli (opsional) — kalau nggak diupload, pakai ikon emoji aja.',
-      hasImage: true,
-      empty: () => ({ icon: '✨', image_path: null, title: '', desc: '' }),
+    lokasi: {
+      section: '#lokasi', button: 'Edit lokasi', list: true, listKey: 'nearby',
+      title: 'Lokasi & tempat terdekat',
+      desc: 'Isi jarak rute (bukan garis lurus): buka Google Maps → "Rute" dari tempat itu ke kost, lalu ketik jaraknya.',
+      itemLabel: 'label',
+      top: [{ key: 'maps_url', label: 'Link Google Maps', placeholder: 'https://maps.app.goo.gl/…', help: 'Di Google Maps: buka lokasi kost → Bagikan → Salin link.', type: 'url' }],
+      empty: () => ({ icon: '📍', label: '', sublabel: '', distance: '' }),
       fields: [
-        { key: 'title', placeholder: 'Judul' },
-        { key: 'desc', placeholder: 'Deskripsi singkat' },
+        { key: 'label', label: 'Nama tempat', placeholder: 'Mis. Untirta', required: true, max: 50 },
+        { key: 'sublabel', label: 'Kategori', placeholder: 'Mis. Kampus', max: 40 },
+        { key: 'distance', label: 'Jarak', placeholder: '500 m', required: true, max: 12 },
+        { key: 'icon', label: 'Ikon', placeholder: '📍', max: 4 },
       ],
+      layout: 'row',
     },
     penghuni: {
-      title: 'Penghuni Kost',
-      hint: 'Teks aja, nggak ada foto — nama, umur, kegiatan, dan sepatah kata dari penghuni.',
-      hasImage: false,
+      section: '#testimoni', button: 'Edit kutipan penghuni', list: true,
+      title: 'Kutipan penghuni (manual)',
+      desc: 'Kutipan yang Anda tulis sendiri. Testimoni yang ditulis penghuni lewat portal dikelola di <a href="/admin/testimoni" target="_blank" rel="noopener">Panel admin → Testimoni</a>.',
+      itemLabel: 'name',
       empty: () => ({ name: '', age: '', activity: '', quote: '' }),
       fields: [
-        { key: 'name', placeholder: 'Nama' },
-        { key: 'age', placeholder: 'Umur', width: 60 },
-        { key: 'activity', placeholder: 'Kegiatan' },
-        { key: 'quote', placeholder: 'Sepatah kata' },
+        { key: 'name', label: 'Nama', placeholder: 'Mis. Budi', required: true, max: 40 },
+        { key: 'age', label: 'Umur', placeholder: '21', max: 3 },
+        { key: 'activity', label: 'Kegiatan', placeholder: 'Mis. Mahasiswa Untirta', max: 50 },
+        { key: 'quote', label: 'Kutipan', placeholder: 'Sepatah kata tentang Genzed Kost', type: 'textarea', required: true, max: 300 },
       ],
+      layout: 'row',
     },
   };
 
-  let listEditorState = null;
+  let ae = null; // { key, cfg, values, list, initial }
 
-  function openListEditor(kind, content) {
-    ensureAdminModalShell();
-    const cfg = LIST_EDITOR_CONFIGS[kind];
-    listEditorState = { kind, list: JSON.parse(JSON.stringify(content[kind] || [])) };
-    openAdminModal(cfg.title);
-    renderListEditorBody();
-    document.getElementById('adminModalSave').onclick = () => {
-      saveAndReload({ [kind]: listEditorState.list });
-    };
-  }
-
-  function renderListEditorBody() {
-    const cfg = LIST_EDITOR_CONFIGS[listEditorState.kind];
-    const list = listEditorState.list;
-    const body = document.getElementById('adminModalBody');
-
-    const rows = list.map((item, i) => {
-      const fieldsHtml = cfg.fields.map((f) => `
-        <input data-i="${i}" data-field="${f.key}" class="admin-list-input" style="${f.width ? `width:${f.width}px;flex:none;` : 'flex:1 1 100px;'}${f.center ? 'text-align:center;' : ''}" value="${escapeHtml(item[f.key] || '')}" placeholder="${escapeHtml(f.placeholder)}">
-      `).join('');
-      const thumbHtml = cfg.hasImage ? `
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:56px;flex-shrink:0;">
-          ${item.image_path
-            ? `<img class="admin-list-thumb" src="${escapeHtml(publicImageUrl(item.image_path))}" alt="">`
-            : `<input data-i="${i}" data-field="icon" class="admin-list-input admin-list-icon-input" value="${escapeHtml(item.icon || '')}" placeholder="✨">`
-          }
-          <label class="admin-upload-label">${item.image_path ? 'Ganti' : '+ Foto'}<input type="file" accept="image/*" hidden data-i="${i}" class="admin-list-upload"></label>
-          ${item.image_path ? `<button type="button" class="admin-upload-label" data-i="${i}" data-action="remove-image">Hapus foto</button>` : ''}
-        </div>
-      ` : '';
-      return `
-        <div class="admin-list-row">
-          ${thumbHtml}
-          <div class="admin-list-fields ${cfg.hasImage ? '' : 'row'}">${fieldsHtml}</div>
-          <div class="admin-list-actions">
-            <button type="button" data-i="${i}" data-action="up" ${i === 0 ? 'disabled' : ''} title="Naikkan urutan">↑</button>
-            <button type="button" data-i="${i}" data-action="down" ${i === list.length - 1 ? 'disabled' : ''} title="Turunkan urutan">↓</button>
-            <button type="button" data-i="${i}" data-action="remove" class="danger">Hapus</button>
+  function aeEnsureShell() {
+    if (document.getElementById('aeDrawer')) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'aeRoot';
+    wrap.innerHTML = `
+      <div class="ae-backdrop" id="aeBackdrop"></div>
+      <aside class="ae-drawer" id="aeDrawer" role="dialog" aria-modal="true" aria-labelledby="aeTitle">
+        <div class="ae-drawer-head">
+          <div style="flex:1;min-width:0">
+            <div class="ae-eyebrow">Edit landing page</div>
+            <h3 id="aeTitle"></h3>
+            <p class="ae-desc" id="aeDesc"></p>
           </div>
+          <button type="button" class="ae-icon-btn" id="aeClose" aria-label="Tutup">${AE_ICON.close}</button>
         </div>
-      `;
-    }).join('');
-
-    body.innerHTML = `
-      <p style="font-size:.78rem;color:var(--muted);margin-bottom:12px;">${escapeHtml(cfg.hint)}</p>
-      ${list.length === 0 ? `<p style="font-size:.82rem;color:var(--muted);margin-bottom:10px;">Belum ada item — landing page pakai konten default.</p>` : rows}
-      <button type="button" class="admin-row-add" id="adminListAddBtn">+ Tambah</button>
-    `;
-
-    body.querySelectorAll('.admin-list-input').forEach((inp) => {
-      inp.addEventListener('input', (e) => {
-        listEditorState.list[Number(e.target.dataset.i)][e.target.dataset.field] = e.target.value;
-      });
-    });
-
-    body.querySelectorAll('.admin-list-upload').forEach((inp) => {
-      inp.addEventListener('change', async (e) => {
-        const i = Number(e.target.dataset.i);
-        const file = e.target.files[0];
-        if (!file) return;
-        const msg = document.getElementById('adminModalMsg');
-        msg.textContent = 'Upload foto...';
-        msg.classList.remove('err');
-        const path = `${crypto.randomUUID()}-${file.name}`;
-        const { error } = await supabase.storage.from(GALLERY_BUCKET).upload(path, file);
-        if (error) {
-          msg.textContent = 'Gagal upload: ' + error.message;
-          msg.classList.add('err');
-          return;
-        }
-        listEditorState.list[i].image_path = path;
-        msg.textContent = '';
-        renderListEditorBody();
-      });
-    });
-
-    body.querySelectorAll('[data-action]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const i = Number(btn.dataset.i);
-        const action = btn.dataset.action;
-        if (action === 'remove') listEditorState.list.splice(i, 1);
-        else if (action === 'up' && i > 0) [listEditorState.list[i - 1], listEditorState.list[i]] = [listEditorState.list[i], listEditorState.list[i - 1]];
-        else if (action === 'down' && i < listEditorState.list.length - 1) [listEditorState.list[i + 1], listEditorState.list[i]] = [listEditorState.list[i], listEditorState.list[i + 1]];
-        else if (action === 'remove-image') listEditorState.list[i].image_path = null;
-        renderListEditorBody();
-      });
-    });
-
-    const addBtn = document.getElementById('adminListAddBtn');
-    if (addBtn) addBtn.addEventListener('click', () => {
-      listEditorState.list.push(cfg.empty());
-      renderListEditorBody();
-    });
+        <div class="ae-drawer-body" id="aeBody"></div>
+        <div class="ae-drawer-foot">
+          <span class="ae-status" id="aeStatus" role="status"></span>
+          <button type="button" class="ae-btn ae-btn-ghost" id="aeCancel">Batal</button>
+          <button type="button" class="ae-btn ae-btn-primary" id="aeSave">Simpan perubahan</button>
+        </div>
+      </aside>`;
+    document.body.appendChild(wrap);
+    document.getElementById('aeClose').addEventListener('click', aeRequestClose);
+    document.getElementById('aeCancel').addEventListener('click', aeRequestClose);
+    document.getElementById('aeBackdrop').addEventListener('click', aeRequestClose);
+    document.getElementById('aeSave').addEventListener('click', aeSave);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.classList.contains('ae-open')) aeRequestClose(); });
   }
 
-  function addEditPencil(anchorEl, onClick) {
-    if (!anchorEl) return;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'admin-edit-pencil';
-    btn.title = 'Edit';
-    btn.textContent = '✏️';
-    btn.addEventListener('click', onClick);
-    anchorEl.insertAdjacentElement('afterend', btn);
+  function aeSnapshot() { return JSON.stringify({ v: ae.values, l: ae.list }); }
+  function aeDirty() { return ae && aeSnapshot() !== ae.initial; }
+
+  function aeSetStatus(text, kind) {
+    const el = document.getElementById('aeStatus');
+    el.textContent = text || '';
+    el.className = 'ae-status' + (kind ? ' ' + kind : '');
   }
 
-  function setupAdminEditMode(content) {
-    ensureAdminModalShell();
+  function aeOpen(key) {
+    aeEnsureShell();
+    const cfg = AE_EDITORS[key];
+    const c = cachedContent || {};
+    ae = {
+      key, cfg,
+      values: cfg.read ? cfg.read(c) : Object.fromEntries((cfg.top || []).map((f) => [f.key, c[f.key] || ''])),
+      list: cfg.list ? JSON.parse(JSON.stringify(c[cfg.listKey || key] || [])) : null,
+    };
+    ae.initial = aeSnapshot();
+    document.getElementById('aeTitle').textContent = cfg.title;
+    document.getElementById('aeDesc').innerHTML = cfg.desc; // teks statis dari konfigurasi di atas
+    document.getElementById('aeSave').disabled = false;
+    aeSetStatus('');
+    aeRender();
+    document.body.classList.add('ae-open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.querySelector('#aeBody .ae-input')?.focus(), 320);
+  }
 
-    const fab = document.createElement('button');
-    fab.type = 'button';
-    fab.className = 'admin-edit-fab';
-    fab.textContent = '✏️ Mode Edit';
-    fab.addEventListener('click', () => {
-      const on = document.body.classList.toggle('admin-edit-on');
-      fab.classList.toggle('on', on);
-      fab.textContent = on ? '✓ Mode Edit Aktif' : '✏️ Mode Edit';
+  function aeClose() {
+    document.body.classList.remove('ae-open');
+    document.body.style.overflow = '';
+    ae = null;
+  }
+
+  function aeRequestClose() {
+    if (aeDirty() && !confirm('Ada perubahan yang belum disimpan. Tutup tanpa menyimpan?')) return;
+    aeClose();
+  }
+
+  function aeFieldHtml(f, value, attrs) {
+    const common = `class="ae-input" ${attrs} placeholder="${escapeHtml(f.placeholder || '')}" ${f.max ? `maxlength="${f.max}"` : ''}`;
+    const input = f.type === 'textarea'
+      ? `<textarea ${common} rows="2">${escapeHtml(value || '')}</textarea>`
+      : `<input ${common} type="${f.type === 'url' ? 'url' : 'text'}" value="${escapeHtml(value || '')}">`;
+    return `<div class="ae-field"><label>${escapeHtml(f.label)}${f.required ? ' <span style="color:#DB2777">*</span>' : ''}</label>${input}${f.help ? `<span class="ae-help">${escapeHtml(f.help)}</span>` : ''}</div>`;
+  }
+
+  function aeRender() {
+    const { cfg } = ae;
+    const body = document.getElementById('aeBody');
+    let html = '';
+
+    if (!cfg.list) {
+      html += `<div class="ae-group"><div class="${cfg.layout ? 'ae-row ae-' + cfg.layout : ''}">` +
+        cfg.fields.map((f) => aeFieldHtml(f, ae.values[f.key], `data-top="${f.key}"`)).join('') + '</div></div>';
+    } else {
+      if (cfg.top) html += `<div class="ae-group">${cfg.top.map((f) => aeFieldHtml(f, ae.values[f.key], `data-top="${f.key}"`)).join('')}</div>`;
+      const list = ae.list;
+      html += `<div class="ae-count">${list.length ? `${list.length} item · urutan di sini = urutan di website` : ''}</div>`;
+      if (!list.length) html += `<div class="ae-empty">Belum ada item — website memakai konten bawaan.<br>Tambah item pertama di bawah.</div>`;
+      html += list.map((item, i) => {
+        const label = (item[cfg.itemLabel] || '').trim();
+        const media = cfg.hasImage ? `
+          <div class="ae-media">
+            <div class="ae-media-preview">${item.image_path ? `<img src="${escapeHtml(publicImageUrl(item.image_path))}" alt="">` : escapeHtml(item.icon || '✨')}</div>
+            <div class="ae-media-actions">
+              <div class="ae-media-btns">
+                <label class="ae-btn ae-btn-ghost" style="cursor:pointer">${item.image_path ? 'Ganti foto' : 'Unggah foto'}<input type="file" accept="image/*" hidden data-upload="${i}"></label>
+                ${item.image_path ? `<button type="button" class="ae-btn ae-btn-ghost" data-act="rmimg" data-i="${i}">Hapus foto</button>` : ''}
+              </div>
+              ${item.image_path ? '<span class="ae-help">Foto dipakai di website.</span>' : `<label class="ae-inline-field"><span>Ikon emoji (tanpa foto)</span><input class="ae-input" style="width:72px;text-align:center" data-i="${i}" data-k="icon" value="${escapeHtml(item.icon || '')}" maxlength="4" placeholder="✨"></label>`}
+            </div>
+          </div>` : '';
+        return `
+          <div class="ae-item">
+            <div class="ae-item-head">
+              <span class="ae-item-num">${i + 1}</span>
+              <span class="ae-item-title ${label ? '' : 'placeholder'}">${escapeHtml(label || 'Item baru')}</span>
+              <div class="ae-item-tools">
+                <button type="button" class="ae-icon-btn" data-act="up" data-i="${i}" ${i === 0 ? 'disabled' : ''} aria-label="Naikkan">${AE_ICON.up}</button>
+                <button type="button" class="ae-icon-btn" data-act="down" data-i="${i}" ${i === list.length - 1 ? 'disabled' : ''} aria-label="Turunkan">${AE_ICON.down}</button>
+                <button type="button" class="ae-icon-btn danger" data-act="del" data-i="${i}" aria-label="Hapus item">${AE_ICON.trash}</button>
+              </div>
+            </div>
+            <div class="ae-item-body">
+              ${media}
+              <div class="${cfg.layout ? 'ae-row' : ''}">${cfg.fields.filter((f) => !(cfg.hasImage && f.key === 'icon')).map((f) => aeFieldHtml(f, item[f.key], `data-i="${i}" data-k="${f.key}"`)).join('')}</div>
+            </div>
+          </div>`;
+      }).join('');
+      html += `<button type="button" class="ae-add" data-act="add">${AE_ICON.plus} Tambah item</button>`;
+    }
+    body.innerHTML = html;
+
+    body.querySelectorAll('[data-top]').forEach((el) => el.addEventListener('input', () => {
+      ae.values[el.dataset.top] = el.value; el.classList.remove('invalid');
+    }));
+    body.querySelectorAll('[data-k]').forEach((el) => el.addEventListener('input', () => {
+      const i = Number(el.dataset.i);
+      ae.list[i][el.dataset.k] = el.value;
+      el.classList.remove('invalid');
+      if (el.dataset.k === cfg.itemLabel) {
+        const t = el.closest('.ae-item').querySelector('.ae-item-title');
+        t.textContent = el.value.trim() || 'Item baru';
+        t.classList.toggle('placeholder', !el.value.trim());
+      }
+      if (el.dataset.k === 'icon') {
+        const pv = el.closest('.ae-item').querySelector('.ae-media-preview');
+        if (pv && !ae.list[i].image_path) pv.textContent = el.value || '✨';
+      }
+    }));
+    body.querySelectorAll('[data-act]').forEach((btn) => btn.addEventListener('click', () => {
+      const i = Number(btn.dataset.i), l = ae.list;
+      if (btn.dataset.act === 'add') { l.push(cfg.empty()); aeRender(); body.querySelector('.ae-item:last-of-type .ae-input')?.focus(); body.scrollTop = body.scrollHeight; return; }
+      if (btn.dataset.act === 'del') {
+        const name = (l[i][cfg.itemLabel] || '').trim();
+        if (name && !confirm(`Hapus "${name}"?`)) return;
+        l.splice(i, 1);
+      }
+      if (btn.dataset.act === 'up' && i > 0) [l[i - 1], l[i]] = [l[i], l[i - 1]];
+      if (btn.dataset.act === 'down' && i < l.length - 1) [l[i + 1], l[i]] = [l[i], l[i + 1]];
+      if (btn.dataset.act === 'rmimg') l[i].image_path = null;
+      aeRender();
+    }));
+    body.querySelectorAll('[data-upload]').forEach((inp) => inp.addEventListener('change', async () => {
+      const i = Number(inp.dataset.upload);
+      const file = inp.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) { aeSetStatus('Ukuran foto maksimal 5 MB.', 'err'); return; }
+      aeSetStatus('Mengunggah foto…');
+      const safe = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').slice(-60);
+      const path = `${crypto.randomUUID()}-${safe}`;
+      const { error } = await supabase.storage.from(GALLERY_BUCKET).upload(path, file);
+      if (error) { aeSetStatus('Gagal mengunggah: ' + error.message, 'err'); return; }
+      ae.list[i].image_path = path;
+      aeSetStatus('Foto terunggah — jangan lupa simpan.', 'ok');
+      aeRender();
+    }));
+  }
+
+  function aeValidate() {
+    const { cfg } = ae;
+    const body = document.getElementById('aeBody');
+    let firstBad = null;
+    const mark = (el) => { el.classList.add('invalid'); firstBad = firstBad || el; };
+    (cfg.top || []).forEach((f) => {
+      const v = (ae.values[f.key] || '').trim();
+      if (f.type === 'url' && v && !/^https?:\/\//i.test(v)) mark(body.querySelector(`[data-top="${f.key}"]`));
     });
-    document.body.appendChild(fab);
+    if (cfg.list) ae.list.forEach((item, i) => cfg.fields.forEach((f) => {
+      if (f.required && !String(item[f.key] || '').trim()) {
+        const el = body.querySelector(`[data-i="${i}"][data-k="${f.key}"]`);
+        if (el) mark(el);
+      }
+    }));
+    if (firstBad) { firstBad.scrollIntoView({ block: 'center', behavior: 'smooth' }); firstBad.focus(); }
+    return !firstBad;
+  }
 
-    addEditPencil(document.querySelector('.hero-stats'), () => openStatsEditor(cachedContent));
-    addEditPencil(document.querySelector('#fitur .section-header .section-sub'), () => openListEditor('keunggulan', cachedContent));
-    addEditPencil(document.querySelector('#fasilitas .section-header .section-sub'), () => openListEditor('facilities', cachedContent));
-    addEditPencil(document.querySelector('#lokasi .section-sub'), () => openListEditor('nearby', cachedContent));
-    addEditPencil(document.querySelector('#lokasi .map-open-btn'), () => openMapsEditor(cachedContent));
-    addEditPencil(document.querySelector('#testimoni .section-header .section-sub'), () => openListEditor('penghuni', cachedContent));
+  async function aeSave() {
+    if (!ae) return;
+    if (!aeValidate()) { aeSetStatus('Lengkapi kolom yang ditandai merah.', 'err'); return; }
+    if (!aeDirty()) { aeSetStatus('Tidak ada perubahan.'); return; }
+    const { cfg, key } = ae;
+    let patch;
+    if (cfg.toPatch) patch = cfg.toPatch(ae.values);
+    else {
+      const clean = ae.list.map((it) => Object.fromEntries(Object.entries(it).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v])));
+      patch = { [cfg.listKey || key]: clean };
+      (cfg.top || []).forEach((f) => { patch[f.key] = (ae.values[f.key] || '').trim() || null; });
+    }
+    const saveBtn = document.getElementById('aeSave');
+    saveBtn.disabled = true;
+    aeSetStatus('Menyimpan…');
+    const { error } = await supabase.from('landing_content').update(patch).eq('id', true);
+    if (error) { saveBtn.disabled = false; aeSetStatus('Gagal menyimpan: ' + error.message, 'err'); return; }
+    ae.initial = aeSnapshot();
+    aeSetStatus('✓ Tersimpan. Memuat ulang halaman…', 'ok');
+    setTimeout(() => location.reload(), 700);
+  }
+
+  function aeSetMode(on) {
+    document.body.classList.toggle('ae-on', on);
+    const sw = document.getElementById('aeModeSwitch');
+    if (sw) sw.checked = on;
+    try { sessionStorage.setItem(AE_MODE_KEY, on ? '1' : '0'); } catch { /* abaikan */ }
+  }
+
+  function setupAdminEditMode(profileName) {
+    aeEnsureShell();
+    const bar = document.createElement('div');
+    bar.className = 'ae-bar';
+    bar.innerHTML = `
+      <div class="ae-bar-left"><span class="ae-bar-badge">ADMIN</span><span>Login sebagai ${escapeHtml(profileName || 'admin')} — perubahan langsung tampil untuk semua pengunjung</span></div>
+      <div class="ae-bar-right">
+        <label class="ae-switch"><input type="checkbox" id="aeModeSwitch"><span class="ae-switch-track"></span>Mode edit</label>
+        <a class="ae-bar-link" href="/admin">Panel admin <span>↗</span></a>
+      </div>`;
+    document.body.prepend(bar);
+    document.body.classList.add('ae-has-bar');
+    document.getElementById('aeModeSwitch').addEventListener('change', (e) => aeSetMode(e.target.checked));
+
+    Object.entries(AE_EDITORS).forEach(([key, cfg]) => {
+      const sec = document.querySelector(cfg.section);
+      if (!sec) return;
+      sec.classList.add('ae-target');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ae-edit-btn';
+      btn.innerHTML = `${AE_ICON.edit}<span>${escapeHtml(cfg.button)}</span>`;
+      btn.addEventListener('click', (e) => { e.stopPropagation(); aeOpen(key); });
+      sec.appendChild(btn);
+    });
+
+    let saved = false;
+    try { saved = sessionStorage.getItem(AE_MODE_KEY) === '1'; } catch { /* abaikan */ }
+    // Link dari Panel admin → Landing Page: /#edit (mode edit) atau /#edit=fasilitas (langsung buka editornya).
+    const deep = location.hash.match(/^#edit(?:=(\w+))?$/);
+    aeSetMode(saved || !!deep);
+    if (deep) {
+      history.replaceState(null, '', location.pathname + location.search);
+      const key = deep[1] && AE_EDITORS[deep[1]] ? deep[1] : null;
+      if (key) {
+        document.querySelector(AE_EDITORS[key].section)?.scrollIntoView({ block: 'start' });
+        setTimeout(() => aeOpen(key), 350);
+      }
+    }
+    window.addEventListener('beforeunload', (e) => { if (aeDirty()) { e.preventDefault(); e.returnValue = ''; } });
   }
 
   (async function initAdminEditModeEntry() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
+      const { data: profile } = await supabase.from('profiles').select('role, full_name').eq('id', session.user.id).maybeSingle();
       if (profile?.role !== 'admin') return;
       for (let i = 0; i < 30 && !cachedContent; i++) await new Promise((r) => setTimeout(r, 100));
       if (!cachedContent) return;
-      setupAdminEditMode(cachedContent);
+      setupAdminEditMode(profile.full_name);
     } catch {
       // Gagal cek admin nggak boleh nge-break landing page buat pengunjung biasa.
     }

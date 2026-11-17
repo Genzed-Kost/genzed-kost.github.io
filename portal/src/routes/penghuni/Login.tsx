@@ -2,7 +2,6 @@ import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthLayout } from "../../components/AuthLayout";
 import { supabase, functionsUrl } from "../../lib/supabaseClient";
-import { isEmail } from "../../lib/format";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -10,25 +9,11 @@ export default function Login() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [magicLoading, setMagicLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
-
-  async function resolveEmail(): Promise<string | null> {
-    if (isEmail(identifier)) return identifier;
-    const res = await fetch(functionsUrl("resolve-identifier"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identifier }),
-    });
-    const data = await res.json();
-    return data.email ?? null;
-  }
 
   async function handleLogin(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setInfo(null);
 
     if (!identifier || !password) {
       setError("Email/No HP dan password wajib diisi.");
@@ -79,35 +64,9 @@ export default function Login() {
     }
   }
 
-  async function handleMagicLink() {
-    setError(null);
-    setInfo(null);
-    if (!identifier) {
-      setError("Isi email/No HP dulu buat kirim magic link.");
-      return;
-    }
-    setMagicLoading(true);
-    try {
-      const email = await resolveEmail();
-      if (!email) {
-        setError("Akun tidak ditemukan.");
-        return;
-      }
-      const { error: otpError } = await supabase.auth.signInWithOtp({ email });
-      if (otpError) {
-        setError("Gagal kirim magic link. Coba lagi.");
-        return;
-      }
-      setInfo("Link login udah dikirim ke email lo. Cek inbox (atau folder spam) ya.");
-    } finally {
-      setMagicLoading(false);
-    }
-  }
-
   return (
     <AuthLayout title="Login Penghuni" subtitle="Masuk buat cek tagihan, bayar, dan pantau kontrak kost lo.">
       {error && <div className="alert alert-error">{error}</div>}
-      {info && <div className="alert alert-success">{info}</div>}
 
       <form onSubmit={handleLogin}>
         <div className="field">
@@ -137,10 +96,7 @@ export default function Login() {
         </button>
       </form>
 
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 18, flexWrap: "wrap", gap: 10 }}>
-        <button className="btn-link" type="button" onClick={handleMagicLink} disabled={magicLoading}>
-          {magicLoading ? "Mengirim..." : "Login pakai Magic Link"}
-        </button>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 18 }}>
         <Link className="btn-link" to="/penghuni/lupa-password">Lupa password?</Link>
       </div>
 

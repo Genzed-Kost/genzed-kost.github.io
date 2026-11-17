@@ -156,7 +156,7 @@ export default function AdminDashboard() {
                 {monthlyIncome.map((m) => (
                   <div key={m.label} style={{ flex: 1, textAlign: "center" }}>
                     <div
-                      style={{ height: Math.max(4, (m.total / maxIncome) * 100), background: "var(--accent)", borderRadius: "6px 6px 0 0", marginBottom: 6 }}
+                      style={{ height: Math.max(4, (m.total / maxIncome) * 100), background: "var(--grad)", borderRadius: "6px 6px 0 0", marginBottom: 6 }}
                       title={formatRupiah(m.total)}
                     />
                     <div style={{ fontSize: ".7rem", color: "var(--muted)" }}>{m.label}</div>

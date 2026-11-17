@@ -9,6 +9,7 @@ const MENU = [
   { to: "/penghuni/bayar", label: "Bayar", icon: "💸" },
   { to: "/penghuni/riwayat-bayar", label: "Riwayat Bayar", icon: "💳" },
   { to: "/penghuni/komplain", label: "Komplain", icon: "🛠️" },
+  { to: "/penghuni/ai-kost", label: "AI Kost", icon: "🤖" },
   { to: "/penghuni/dokumen", label: "Dokumen", icon: "📁" },
   { to: "/penghuni/profil", label: "Profil", icon: "👤" },
 ];
@@ -61,7 +62,7 @@ export function PortalLayout() {
               fontWeight: 600,
               textDecoration: "none",
               color: isActive ? "var(--accent)" : "var(--muted)",
-              background: isActive ? "rgba(200,240,75,.08)" : "transparent",
+              background: isActive ? "rgba(192,132,252,.12)" : "transparent",
             })}
           >
             <span aria-hidden="true">{item.icon}</span> {item.label}

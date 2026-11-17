@@ -33,7 +33,7 @@
     {"@type": "Question", "name": "Berapa harga sewa kamar di Genzed Kost?", "acceptedAnswer": {"@type": "Answer", "text": "Mulai dari Rp 800.000/bulan tergantung tipe kamar. Cek daftar lengkap dan fasilitas tiap tipe kamar di halaman utama bagian Harga."}},
     {"@type": "Question", "name": "Bagaimana cara sewa kamar di Genzed Kost?", "acceptedAnswer": {"@type": "Answer", "text": "Hubungi admin lewat WhatsApp buat cek ketersediaan kamar, survei (opsional), lalu tanda tangan kontrak dan bayar sewa bulan pertama + deposit. Admin bakal buatkan akun Portal Penghuni buat kelola tagihan dan pembayaran."}},
     {"@type": "Question", "name": "Berapa deposit yang perlu dibayar dan kapan dikembalikan?", "acceptedAnswer": {"@type": "Answer", "text": "Besaran deposit ditentukan di awal kontrak. Deposit dikembalikan penuh saat checkout, dipotong hanya kalau ada kerusakan kamar atau tunggakan yang belum lunas."}},
-    {"@type": "Question", "name": "Metode pembayaran apa saja yang tersedia?", "acceptedAnswer": {"@type": "Answer", "text": "Transfer manual ke rekening kost, QRIS, atau pembayaran otomatis (Virtual Account/e-wallet) lewat Portal Penghuni. Semua histori pembayaran tercatat transparan di portal."}}
+    {"@type": "Question", "name": "Metode pembayaran apa saja yang tersedia?", "acceptedAnswer": {"@type": "Answer", "text": "Transfer manual ke salah satu rekening kost (bank, QRIS, atau e-wallet) yang tercantum di Portal Penghuni, lalu upload bukti transfer untuk diverifikasi admin. Semua histori pembayaran tercatat transparan di portal."}}
   ]
 }
 </script>
@@ -101,7 +101,7 @@ footer p { color: var(--muted); font-size: .8rem; }
 <div class="container">
   <div class="page-kicker">Genzed Kost</div>
   <h1>Pertanyaan Umum</h1>
-  <p class="lead">Kumpulan pertanyaan yang paling sering ditanyain calon penghuni. Nggak ketemu jawabannya? Langsung chat admin aja.</p>
+  <p class="lead">Kumpulan pertanyaan yang paling sering ditanyain calon penghuni. Nggak ketemu jawabannya? Tanya AI Kost atau langsung chat admin aja.</p>
 
   <h2>Sewa & Kontrak</h2>
   <details>
@@ -128,7 +128,7 @@ footer p { color: var(--muted); font-size: .8rem; }
   </details>
   <details>
     <summary>Metode pembayaran apa aja yang bisa dipakai?</summary>
-    <p>Transfer manual ke rekening kost, QRIS, atau jalur otomatis (Virtual Account bank/e-wallet) lewat Portal Penghuni. Semua histori pembayaran tercatat rapi dan bisa dicek kapan aja.</p>
+    <p>Transfer manual ke salah satu rekening kost (bank, QRIS, atau e-wallet) yang tercantum di Portal Penghuni, lalu upload bukti transfernya — admin yang verifikasi. Semua histori pembayaran tercatat rapi dan bisa dicek kapan aja.</p>
   </details>
   <details>
     <summary>Kalau telat bayar sewa gimana?</summary>
@@ -138,7 +138,7 @@ footer p { color: var(--muted); font-size: .8rem; }
   <h2>Fasilitas & Aturan</h2>
   <details>
     <summary>Fasilitas apa aja yang didapat?</summary>
-    <p>WiFi 100 Mbps, AC, kamar mandi dalam, rooftop, dan fasilitas lain tergantung tipe kamar — cek detailnya di bagian <a href="index.html#fasilitas" style="color:var(--accent)">Fasilitas</a> halaman utama.</p>
+    <p>WiFi 150 Mbps, AC, kamar mandi dalam, rooftop, dan fasilitas lain tergantung tipe kamar — cek detailnya di bagian <a href="index.html#fasilitas" style="color:var(--accent)">Fasilitas</a> halaman utama.</p>
   </details>
   <details>
     <summary>Boleh bawa motor/mobil?</summary>
@@ -150,7 +150,8 @@ footer p { color: var(--muted); font-size: .8rem; }
   </details>
 
   <div class="cta-row">
-    <a href="https://wa.link/v5vckc" target="_blank" rel="noopener" class="btn btn-primary">💬 Masih Ada Pertanyaan?</a>
+    <a href="#" class="btn btn-primary" data-aikost-open>🤖 Tanya AI Kost</a>
+    <a href="https://wa.link/v5vckc" target="_blank" rel="noopener" class="btn btn-ghost">💬 Masih Ada Pertanyaan?</a>
     <a href="peraturan.html" class="btn btn-ghost">Lihat Peraturan Kost →</a>
   </div>
 </div>
@@ -166,5 +167,6 @@ footer p { color: var(--muted); font-size: .8rem; }
   <p>© 2025 Genzed Kost — Serang, Banten. All rights reserved.</p>
 </footer>
 
+<script src="ai-kost.js" data-supabase-url="https://zgtcuwgwdtrswglxmenx.supabase.co" data-supabase-key="sb_publishable_p0gXKvXyrL1hA7l03tTgaw_pcPHtnFv" defer></script>
 </body>
 </html>

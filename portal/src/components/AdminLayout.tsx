@@ -67,7 +67,7 @@ export function AdminLayout() {
               fontWeight: 600,
               textDecoration: "none",
               color: isActive ? "var(--accent)" : "var(--muted)",
-              background: isActive ? "rgba(200,240,75,.08)" : "transparent",
+              background: isActive ? "rgba(192,132,252,.12)" : "transparent",
             })}
           >
             <span aria-hidden="true">{item.icon}</span> {item.label}

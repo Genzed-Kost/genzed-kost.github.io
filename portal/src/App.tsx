@@ -14,6 +14,7 @@ import RiwayatBayar from "./routes/penghuni/RiwayatBayar";
 import Komplain from "./routes/penghuni/Komplain";
 import Dokumen from "./routes/penghuni/Dokumen";
 import Profil from "./routes/penghuni/Profil";
+import AiKost from "./routes/penghuni/AiKost";
 import AdminDashboard from "./routes/admin/Dashboard";
 import VerifikasiPembayaran from "./routes/admin/VerifikasiPembayaran";
 import AdminPenghuni from "./routes/admin/Penghuni";
@@ -50,6 +51,7 @@ export default function App() {
               <Route path="/penghuni/komplain" element={<Komplain />} />
               <Route path="/penghuni/dokumen" element={<Dokumen />} />
               <Route path="/penghuni/profil" element={<Profil />} />
+              <Route path="/penghuni/ai-kost" element={<AiKost />} />
             </Route>
           </Route>
 

@@ -1,19 +1,24 @@
 /* Token warna & radius sama persis dengan landing page (index.html root)
    supaya portal terasa satu kesatuan visual. */
 :root {
-  --bg:          #0A0A0A;
-  --surface:     #141414;
-  --surface2:    #1C1C1C;
-  --border:      #2A2A2A;
-  --border-h:    rgba(200,240,75,.28);
-  --text:        #F2EDE6;
-  --muted:       #888880;
-  --accent:      #C8F04B;
-  --accent-dark: #9BBD30;
+  --bg:          #0C0A1D;
+  --surface:     #14112B;
+  --surface2:    #1D1938;
+  --border:      #2C2752;
+  --border-h:    rgba(192,132,252,.28);
+  --text:        #F5F3FF;
+  --muted:       #A5A0C8;
+  --accent:      #C084FC;
+  --accent-dark: #9333EA;
   --wa:          #25D366;
   --danger:      #F25555;
   --warn:        #F3CC00;
   --success:     #4ECDC4;
+  --accent-2:    #F472B6;
+  --accent-3:    #FB923C;
+  --accent-4:    #22D3EE;
+  --grad:        linear-gradient(120deg, #7C3AED 0%, #DB2777 55%, #F97316 100%);
+  --grad-soft:   linear-gradient(120deg, rgba(124,58,237,.16), rgba(219,39,119,.12) 55%, rgba(249,115,22,.10));
   --r:           16px;
   --r-xl:        24px;
   --ease-out:    cubic-bezier(.22,1,.36,1);

@@ -103,6 +103,14 @@ Status pembangunan:
 11. Buat akun admin pertama secara manual (karena penghuni cuma bisa dibuat oleh admin, jadi admin pertama harus dibuat lewat dashboard):
     - Di Supabase dashboard → **Authentication → Users → Add user**, buat 1 user pakai email lo.
     - Di **Table Editor → profiles**, insert 1 row manual: `id` = ID user yang baru dibuat, `role` = `admin`, isi `full_name`, `email`, `phone`.
+12. **AI Kost** (asisten tanya-jawab peraturan/FAQ/harga — tombol "🤖 Tanya AI Kost" di situs & menu AI Kost di Portal Penghuni):
+    ```bash
+    supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+    supabase functions deploy ai-kost --no-verify-jwt
+    ```
+    - API key dibuat di [platform.claude.com](https://platform.claude.com) → API Keys (berbayar per pemakaian; pasang batas belanja bulanan di sana).
+    - Jawaban AI diambil LANGSUNG dari `peraturan.html`, `faq.html`, dan `index.html` yang sudah live — cukup edit halaman itu, AI Kost ikut update (cache 10 menit).
+    - Dibatasi 20 pertanyaan/jam per pengunjung (tabel `ai_kost_requests`, dari migrasi `20250123000000_ai_kost_rate_limit.sql`).
 
 ---
 

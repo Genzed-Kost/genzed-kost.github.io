@@ -49,3 +49,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.reconcile-payments]
 verify_jwt = false
+[functions.ai-kost]
+verify_jwt = false

@@ -52,6 +52,7 @@ jobs:
           cp logo.svg publish/
           cp robots.txt publish/
           cp sitemap.xml publish/
+          cp ai-kost.js publish/
           # Hasil build portal (React) masuk ke subfolder /app/.
           mkdir -p publish/app
           cp -r portal/dist/* publish/app/

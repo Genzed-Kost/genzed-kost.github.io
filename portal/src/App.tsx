@@ -15,6 +15,8 @@ import Komplain from "./routes/penghuni/Komplain";
 import Dokumen from "./routes/penghuni/Dokumen";
 import Profil from "./routes/penghuni/Profil";
 import AiKost from "./routes/penghuni/AiKost";
+import Testimoni from "./routes/penghuni/Testimoni";
+import AdminTestimoni from "./routes/admin/Testimoni";
 import AdminDashboard from "./routes/admin/Dashboard";
 import VerifikasiPembayaran from "./routes/admin/VerifikasiPembayaran";
 import AdminPenghuni from "./routes/admin/Penghuni";
@@ -52,6 +54,7 @@ export default function App() {
               <Route path="/penghuni/dokumen" element={<Dokumen />} />
               <Route path="/penghuni/profil" element={<Profil />} />
               <Route path="/penghuni/ai-kost" element={<AiKost />} />
+              <Route path="/penghuni/testimoni" element={<Testimoni />} />
             </Route>
           </Route>
 
@@ -63,6 +66,7 @@ export default function App() {
               <Route path="/admin/kontrak" element={<Kontrak />} />
               <Route path="/admin/kamar" element={<Kamar />} />
               <Route path="/admin/komplain" element={<AdminKomplain />} />
+              <Route path="/admin/testimoni" element={<AdminTestimoni />} />
               <Route path="/admin/dokumen" element={<AdminDokumen />} />
               <Route path="/admin/voucher" element={<AdminVoucher />} />
               <Route path="/admin/pengaturan" element={<Pengaturan />} />

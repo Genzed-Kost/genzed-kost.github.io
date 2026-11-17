@@ -10,6 +10,7 @@ const MENU = [
   { to: "/penghuni/riwayat-bayar", label: "Riwayat Bayar", icon: "💳" },
   { to: "/penghuni/komplain", label: "Komplain", icon: "🛠️" },
   { to: "/penghuni/ai-kost", label: "AI Kost", icon: "🤖" },
+  { to: "/penghuni/testimoni", label: "Testimoni", icon: "⭐" },
   { to: "/penghuni/dokumen", label: "Dokumen", icon: "📁" },
   { to: "/penghuni/profil", label: "Profil", icon: "👤" },
 ];

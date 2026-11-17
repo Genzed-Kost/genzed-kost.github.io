@@ -10,6 +10,7 @@ const MENU = [
   { to: "/admin/kontrak", label: "Kontrak", icon: "📄" },
   { to: "/admin/kamar", label: "Kamar & Tipe", icon: "🛏️" },
   { to: "/admin/komplain", label: "Komplain", icon: "🛠️" },
+  { to: "/admin/testimoni", label: "Testimoni", icon: "⭐" },
   { to: "/admin/dokumen", label: "Dokumen", icon: "📁" },
   { to: "/admin/voucher", label: "Voucher", icon: "🎟️" },
   { to: "/admin/pengaturan", label: "Pengaturan", icon: "⚙️" },

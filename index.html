@@ -571,7 +571,7 @@ section { padding: clamp(64px, 10vw, 96px) 5vw; }
 .fitur-card-img img { width: 100%; height: 100%; object-fit: cover; }
 
 /* ===== PENGHUNI KOST (teks saja, diisi admin lewat portal) ===== */
-#penghuniGrid[hidden] { display: none; }
+#penghuniGrid[hidden], #testimonialCta[hidden] { display: none; }
 .penghuni-grid {
   display: grid; grid-template-columns: repeat(3,1fr); gap: 16px;
   margin-bottom: clamp(28px,4vw,40px);
@@ -1088,6 +1088,22 @@ footer      { background: #F8F6FF; }
 .social-btn:hover { background: var(--grad-soft); border-color: rgba(219,39,119,.35); }
 .footer-col ul li a:hover { color: var(--accent-2); }
 
+/* Testimoni penghuni */
+.testi-card { display: flex; flex-direction: column; gap: 12px; }
+.testi-card .penghuni-quote { color: var(--text); font-size: .9rem; flex: 1; }
+.testi-stars { color: #F59E0B; font-size: 1.05rem; letter-spacing: 2px; }
+.testi-stars span { color: #E4DDF5; }
+.testi-author { display: flex; align-items: center; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+.testi-avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0;
+  background: var(--grad); color: #fff; font-family: 'Syne', sans-serif; font-weight: 700; }
+.testi-author .penghuni-meta { margin-bottom: 0; color: #0F766E; }
+.testi-summary { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; color: var(--muted); font-size: .88rem; }
+.testi-summary-num { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.8rem; color: var(--text); }
+.testi-summary-stars { color: #F59E0B; letter-spacing: 2px; }
+.testi-summary-stars span { color: #E4DDF5; }
+#testimoni .section-sub a, .testimonial-cta-login a { color: var(--accent-2); font-weight: 600; }
+.testimonial-cta-login { font-size: .82rem; color: var(--muted); }
+
 /* Mode edit admin */
 .admin-edit-pencil { color: var(--accent-2); background: #FDF2F8; border-color: rgba(219,39,119,.3); }
 .admin-modal-card { background: #fff; box-shadow: 0 30px 80px -20px rgba(28,22,51,.35); }
@@ -1424,6 +1440,7 @@ footer      { background: #F8F6FF; }
     <div class="testimonial-cta-icon">💬</div>
     <p class="testimonial-cta-text">Belum ada testimoni tertulis di sini — kami nggak mau pasang testimoni abal-abal cuma buat kelihatan ramai. Cara paling jujur buat tau gimana rasanya tinggal di Genzed Kost? Survei langsung, ngobrol sama penghuni yang udah ada, cek sendiri kamarnya.</p>
     <a href="https://wa.link/v5vckc" target="_blank" rel="noopener" class="btn-primary">💬 Ajak Survei Kamar</a>
+    <p class="testimonial-cta-login">Udah ngekos di sini? <a href="/penghuni/testimoni">Login &amp; tulis testimonimu →</a></p>
   </div>
 </section>
 
@@ -1696,6 +1713,52 @@ footer      { background: #F8F6FF; }
     return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   }
 
+  // Section Testimoni = entri "Penghuni Kost" dari admin + testimoni yang ditulis penghuni sendiri.
+  const testimoniState = { admin: [], user: [] };
+  function renderTestimoniSection() {
+    const grid = document.getElementById('penghuniGrid');
+    const cta = document.getElementById('testimonialCta');
+    const sub = document.querySelector('#testimoni .section-sub');
+    if (!grid) return;
+    const stars = n => {
+      const r = Math.max(0, Math.min(5, Number(n) || 0));
+      return `<div class="testi-stars" aria-label="${r} dari 5 bintang">${'★'.repeat(r)}<span>${'★'.repeat(5 - r)}</span></div>`;
+    };
+    const userCards = testimoniState.user.map(t => `
+      <div class="penghuni-card testi-card">
+        ${stars(t.rating)}
+        <div class="penghuni-quote">"${escapeHtml(t.message)}"</div>
+        <div class="testi-author"><span class="testi-avatar">${escapeHtml((t.display_name || '?').trim().charAt(0).toUpperCase())}</span>
+          <div><div class="penghuni-name">${escapeHtml(t.display_name)}</div><div class="penghuni-meta">Penghuni Genzed Kost ✓</div></div>
+        </div>
+      </div>`);
+    const adminCards = testimoniState.admin.map(p => `
+      <div class="penghuni-card">
+        <div class="penghuni-name">${escapeHtml(p.name)}</div>
+        <div class="penghuni-meta">${[p.age ? escapeHtml(p.age) + ' th' : '', escapeHtml(p.activity || '')].filter(Boolean).join(' · ')}</div>
+        <div class="penghuni-quote">"${escapeHtml(p.quote || '')}"</div>
+      </div>`);
+    const cards = userCards.concat(adminCards);
+    if (!cards.length) return;
+    grid.innerHTML = cards.join('');
+    grid.hidden = false;
+    if (cta) cta.hidden = true;
+    if (sub) sub.innerHTML = 'Cerita asli dari penghuni Genzed Kost. Penghuni? <a href="/penghuni/testimoni">Tulis testimonimu →</a>';
+    const ratings = testimoniState.user.map(t => Number(t.rating)).filter(Boolean);
+    let summary = document.getElementById('testiSummary');
+    if (ratings.length) {
+      const avg = (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1).replace('.', ',');
+      if (!summary) {
+        summary = document.createElement('div');
+        summary.id = 'testiSummary';
+        summary.className = 'testi-summary';
+        grid.parentNode.insertBefore(summary, grid);
+      }
+      const full = Math.round(ratings.reduce((a, b) => a + b, 0) / ratings.length);
+      summary.innerHTML = `<span class="testi-summary-num">${avg}</span><span class="testi-summary-stars" aria-hidden="true">${'★'.repeat(full)}<span>${'★'.repeat(5 - full)}</span></span><span>dari ${ratings.length} testimoni penghuni</span>`;
+    }
+  }
+
   function publicImageUrl(path) {
     return supabase.storage.from('landing-gallery').getPublicUrl(path).data.publicUrl;
   }
@@ -1824,23 +1887,24 @@ footer      { background: #F8F6FF; }
       }
 
       const penghuni = Array.isArray(data.penghuni) ? data.penghuni : [];
-      if (penghuni.length > 0) {
-        const grid = document.getElementById('penghuniGrid');
-        const cta = document.getElementById('testimonialCta');
-        if (grid) {
-          grid.innerHTML = penghuni.map(p => `
-            <div class="penghuni-card">
-              <div class="penghuni-name">${escapeHtml(p.name)}</div>
-              <div class="penghuni-meta">${[p.age ? escapeHtml(p.age) + ' th' : '', escapeHtml(p.activity || '')].filter(Boolean).join(' · ')}</div>
-              <div class="penghuni-quote">"${escapeHtml(p.quote || '')}"</div>
-            </div>
-          `).join('');
-          grid.hidden = false;
-          if (cta) cta.hidden = true;
-        }
-      }
+      testimoniState.admin = penghuni;
+      renderTestimoniSection();
     } catch {
       // Gagal fetch/render nggak boleh nge-break landing page — biarin konten default tampil.
+    }
+  })();
+
+  /* ═══ Testimoni dari penghuni (ditulis lewat Portal Penghuni → menu Testimoni) ═══
+     Digabung dengan entri "Penghuni Kost" yang diisi admin. Diambil dari view
+     public_testimonials (cuma nama tampilan, rating, isi — tanpa data akun). */
+  (async () => {
+    try {
+      const { data, error } = await supabase.from('public_testimonials').select('id, display_name, rating, message, updated_at').limit(30);
+      if (error || !Array.isArray(data)) return;
+      testimoniState.user = data;
+      renderTestimoniSection();
+    } catch {
+      // Tabel belum ada / offline: biarin konten default tampil.
     }
   })();
 

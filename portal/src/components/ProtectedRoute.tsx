@@ -1,8 +1,9 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export function ProtectedRoute({ requireRole }: { requireRole?: "admin" | "penghuni" }) {
   const { session, profile, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -13,7 +14,8 @@ export function ProtectedRoute({ requireRole }: { requireRole?: "admin" | "pengh
   }
 
   if (!session) {
-    return <Navigate to="/penghuni/login" replace />;
+    // Simpan tujuan awal supaya habis login langsung balik ke halaman itu.
+    return <Navigate to="/penghuni/login" replace state={{ from: location.pathname }} />;
   }
 
   if (requireRole && profile?.role !== requireRole) {

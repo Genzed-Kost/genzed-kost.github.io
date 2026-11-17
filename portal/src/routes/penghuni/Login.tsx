@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthLayout } from "../../components/AuthLayout";
 import { supabase, functionsUrl } from "../../lib/supabaseClient";
 import { isEmail } from "../../lib/format";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -66,7 +67,11 @@ export default function Login() {
         .select("role")
         .eq("id", sessionData.user.id)
         .single();
-      navigate(profile?.role === "admin" ? "/admin" : "/penghuni/dashboard");
+      const from = (location.state as { from?: string } | null)?.from;
+      const home = profile?.role === "admin" ? "/admin" : "/penghuni/dashboard";
+      // Balik ke halaman tujuan awal kalau masih wilayah role-nya (mis. /penghuni/testimoni).
+      const allowed = profile?.role === "admin" ? from?.startsWith("/admin") : from?.startsWith("/penghuni/");
+      navigate(allowed && from ? from : home);
     } catch {
       setError("Terjadi kesalahan. Coba lagi ya.");
     } finally {

@@ -109,6 +109,9 @@ Status pembangunan:
     - Kalau AI Kost sering salah paham kata tertentu, tambahkan sinonimnya di `SYN_GROUPS` dalam `ai-kost.js`.
     - Riwayat chat disimpan di perangkat pengunjung (localStorage) dan **dihapus otomatis kalau 8 jam nggak dipakai**.
     - Bagian `privasi` di `ai-kost-data.json` juga jadi teks **Kebijakan Privasi** yang wajib disetujui penghuni saat aktivasi akun. Persetujuannya tercatat di Supabase → Authentication → Users → `user_metadata` (`privacy_consent_at`, `privacy_policy_version`). Kalau isi privasi berubah, update juga `privasi_versi`.
+13. **Testimoni penghuni** — penghuni yang sudah login bisa menulis 1 testimoni (rating bintang + cerita) lewat menu **⭐ Testimoni** di Portal Penghuni; langsung tampil di section "Testimoni Penghuni Kost" di landing page. Admin bisa menyembunyikan / menghapus lewat **Admin → Testimoni**.
+    - Jalankan migrasi [`20250125000000_testimonials.sql`](supabase/migrations/20250125000000_testimonials.sql) (`supabase db push`). Sebelum migrasi dijalankan, landing page tetap normal (section testimoni menampilkan ajakan survei seperti biasa).
+    - Landing page cuma membaca view `public_testimonials` (nama tampilan, rating, isi) — tanpa data akun penghuni.
 
 ---
 

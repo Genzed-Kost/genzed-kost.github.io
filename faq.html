@@ -19,7 +19,7 @@
 <meta property="og:url" content="https://genzed-kost.github.io/faq.html">
 <meta property="og:site_name" content="Genzed Kost">
 <meta property="og:locale" content="id_ID">
-<meta name="theme-color" content="#0A0A0A">
+<meta name="theme-color" content="#0C0A1D">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,8 +40,8 @@
 
 <style>
 :root {
-  --bg: #0A0A0A; --surface: #141414; --surface2: #1C1C1C; --border: #2A2A2A;
-  --text: #F2EDE6; --muted: #888880; --accent: #C8F04B; --r: 16px; --r-xl: 24px;
+  --bg: #0C0A1D; --surface: #14112B; --surface2: #1D1938; --border: #2C2752;
+  --text: #F5F3FF; --muted: #A5A0C8; --accent: #C084FC; --r: 16px; --r-xl: 24px;
 }
 * , *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -52,7 +52,7 @@ img { display: block; max-width: 100%; }
 
 nav {
   position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 5vw; background: rgba(10,10,10,.9); backdrop-filter: blur(20px);
+  padding: 16px 5vw; background: rgba(12,10,29,.9); backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
 }
 .nav-logo { display: flex; align-items: center; gap: 9px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.3rem; text-decoration: none; color: var(--text); }
@@ -72,7 +72,7 @@ details {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
   margin-bottom: 10px; padding: 16px 20px; cursor: pointer;
 }
-details[open] { border-color: var(--border-h, rgba(200,240,75,.28)); }
+details[open] { border-color: var(--border-h, rgba(192,132,252,.28)); }
 summary { font-weight: 600; font-size: .95rem; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 summary::-webkit-details-marker { display: none; }
 summary::after { content: "+"; color: var(--accent); font-size: 1.3rem; font-weight: 400; flex-shrink: 0; }
@@ -81,7 +81,7 @@ details p { color: #D8D2C8; font-size: .9rem; margin-top: 12px; }
 
 .cta-row { margin-top: 40px; display: flex; gap: 12px; flex-wrap: wrap; }
 .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 999px; font-weight: 600; font-size: .88rem; text-decoration: none; }
-.btn-primary { background: var(--accent); color: #0A0A0A; }
+.btn-primary { background: linear-gradient(120deg,#7C3AED,#DB2777 55%,#F97316); color: #fff; }
 .btn-ghost { border: 1px solid var(--border); color: var(--text); }
 
 footer { border-top: 1px solid var(--border); padding: 28px 6vw; text-align: center; }

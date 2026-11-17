@@ -24,7 +24,8 @@ const SUGGESTIONS = [
   "Boleh masak di kamar?",
   "Data pribadiku dipakai buat apa?",
 ];
-const STORE_KEY = "aikost_portal_history_v2";
+const STORE_KEY = "aikost_portal_history_v3";
+const IDLE_LIMIT_MS = 8 * 60 * 60 * 1000; // riwayat chat dihapus kalau 8 jam nggak dipakai
 const WA_LINK = "https://wa.link/v5vckc";
 
 let enginePromise: Promise<NonNullable<Window["AIKost"]>> | null = null;
@@ -46,11 +47,36 @@ function loadEngine() {
   return enginePromise;
 }
 
-function loadHistory(): Turn[] {
+type Saved = { lastUsed: number; history: Turn[] };
+
+function readSaved(): Saved | null {
   try {
-    return JSON.parse(sessionStorage.getItem(STORE_KEY) ?? "[]") as Turn[];
+    return JSON.parse(localStorage.getItem(STORE_KEY) ?? "null") as Saved | null;
   } catch {
+    return null;
+  }
+}
+
+// Riwayat disimpan di perangkat (localStorage) bareng waktu terakhir dipakai;
+// kalau 8 jam nggak ada pertanyaan baru, riwayatnya dihapus otomatis.
+function loadHistory(): Turn[] {
+  const saved = readSaved();
+  if (!saved || Date.now() - saved.lastUsed > IDLE_LIMIT_MS) {
+    try {
+      localStorage.removeItem(STORE_KEY);
+    } catch {
+      /* abaikan */
+    }
     return [];
+  }
+  return saved.history ?? [];
+}
+
+function saveHistory(history: Turn[]) {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify({ lastUsed: Date.now(), history: history.slice(-20) }));
+  } catch {
+    /* abaikan */
   }
 }
 
@@ -64,12 +90,21 @@ export default function AiKost() {
     void loadEngine().catch(() => {});
   }, []);
 
+  // Halaman dibiarkan terbuka lama? Tetap cek kedaluwarsa tiap menit & saat tab aktif lagi.
   useEffect(() => {
-    try {
-      sessionStorage.setItem(STORE_KEY, JSON.stringify(history.slice(-20)));
-    } catch {
-      /* abaikan */
-    }
+    const check = () => {
+      const saved = readSaved();
+      if (!saved || Date.now() - saved.lastUsed > IDLE_LIMIT_MS) setHistory((h) => (h.length ? loadHistory() : h));
+    };
+    const id = window.setInterval(check, 60 * 1000);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, []);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [history, pending]);
 
@@ -89,7 +124,11 @@ export default function AiKost() {
         fallback: true,
       };
     }
-    setHistory((h) => [...h, { q, a }]);
+    setHistory((h) => {
+      const next = [...h, { q, a }];
+      saveHistory(next);
+      return next;
+    });
     setPending(null);
   }
 

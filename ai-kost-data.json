@@ -1,5 +1,6 @@
 {
-  "_petunjuk": "Sumber jawaban AI Kost. Edit teks di sini lalu push ke main — AI Kost otomatis pakai isi terbaru. 'faq' = tanya-jawab, 'peraturan' & 'privasi' = per bagian, tiap butir di 'isi' jadi satu jawaban.",
+  "_petunjuk": "Sumber jawaban AI Kost (dan teks Kebijakan Privasi di halaman aktivasi akun). Edit teks di sini lalu push ke main — AI Kost otomatis pakai isi terbaru. 'faq' = tanya-jawab, 'peraturan' & 'privasi' = per bagian, tiap butir di 'isi' jadi satu jawaban. Kalau isi 'privasi' berubah, ganti juga 'privasi_versi' (tanggal) supaya persetujuan penghuni tercatat untuk versi yang benar.",
+  "privasi_versi": "2026-11-17",
   "faq": [
     {
       "q": "Berapa harga sewa kamar di Genzed Kost?",

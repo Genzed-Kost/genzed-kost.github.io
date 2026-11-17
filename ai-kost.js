@@ -23,7 +23,8 @@
   var BASE = script && script.src ? new URL(".", script.src).href : new URL("/", location.href).href;
   var WITH_WIDGET = !(script && script.dataset.widget === "false");
   var WA_LINK = "https://wa.link/v5vckc";
-  var STORE_KEY = "aikost_history_v2";
+  var STORE_KEY = "aikost_history_v3";
+  var IDLE_LIMIT_MS = 8 * 60 * 60 * 1000; // riwayat chat dihapus kalau 8 jam nggak dipakai
   var SUGGESTIONS = [
     "Jam bertamu sampai jam berapa?",
     "Berapa harga kamarnya?",
@@ -355,11 +356,23 @@ background:linear-gradient(120deg,#7C3AED,#DB2777 55%,#F97316)}\
     }
   }
 
+  // Riwayat disimpan di perangkat pengunjung (localStorage) bareng waktu terakhir dipakai.
+  // Kalau 8 jam nggak ada pertanyaan baru, riwayatnya dihapus otomatis.
   function loadHistory() {
-    try { return JSON.parse(sessionStorage.getItem(STORE_KEY) || "[]") || []; } catch (e) { return []; }
+    try {
+      var saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+      if (!saved || !saved.lastUsed || Date.now() - saved.lastUsed > IDLE_LIMIT_MS) {
+        localStorage.removeItem(STORE_KEY);
+        return [];
+      }
+      return saved.history || [];
+    } catch (e) { return []; }
   }
   function saveHistory(h) {
-    try { sessionStorage.setItem(STORE_KEY, JSON.stringify(h.slice(-20))); } catch (e) { /* abaikan */ }
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ lastUsed: Date.now(), history: h.slice(-20) })); } catch (e) { /* abaikan */ }
+  }
+  function lastUsed() {
+    try { var saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); return saved && saved.lastUsed; } catch (e) { return null; }
   }
 
   function init() {
@@ -438,7 +451,20 @@ background:linear-gradient(120deg,#7C3AED,#DB2777 55%,#F97316)}\
         });
     }
 
+    // Cek kedaluwarsa juga saat halaman dibiarkan terbuka lama.
+    function expireIfIdle() {
+      var t = lastUsed();
+      if (history.length && (!t || Date.now() - t > IDLE_LIMIT_MS)) {
+        history = [];
+        try { localStorage.removeItem(STORE_KEY); } catch (e) { /* abaikan */ }
+        render();
+      }
+    }
+    setInterval(expireIfIdle, 60 * 1000);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) expireIfIdle(); });
+
     function open(question) {
+      expireIfIdle();
       panel.classList.add("open");
       fab.style.display = "none";
       getKB().catch(function () {}); // mulai muat data di belakang layar

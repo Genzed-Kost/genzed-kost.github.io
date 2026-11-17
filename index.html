@@ -527,6 +527,8 @@ section { padding: clamp(64px, 10vw, 96px) 5vw; }
   transition: border-color .3s, opacity .4s var(--ease-out), transform .4s var(--ease-out);
 }
 .card-carousel > *.is-active { opacity: 1; transform: scale(1); }
+.card-carousel > * { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.card-carousel > *:not(.is-active):hover { opacity: .65; }
 .carousel-dots { display: flex; justify-content: center; gap: 8px; margin-top: 18px; }
 .carousel-dot {
   width: 8px; height: 8px; border-radius: 50%;
@@ -1595,16 +1597,29 @@ body {
       });
       return closest;
     }
+    // Geser kartu ke tengah tanpa ikut menggulung halaman ke atas/bawah.
+    function goTo(i) {
+      const list = cards();
+      if (!list.length) return;
+      const target = list[(i + list.length) % list.length];
+      track.scrollTo({ left: target.offsetLeft - (track.clientWidth - target.offsetWidth) / 2, behavior: 'smooth' });
+    }
     function renderDots() {
       const list = cards();
       dotsWrap.innerHTML = list.map((_, i) => `<button type="button" class="carousel-dot" data-i="${i}" aria-label="Ke slide ${i + 1}"></button>`).join('');
       dotsWrap.querySelectorAll('.carousel-dot').forEach(dot => {
-        dot.addEventListener('click', () => {
-          const target = cards()[Number(dot.dataset.i)];
-          if (target) target.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
-        });
+        dot.addEventListener('click', () => goTo(Number(dot.dataset.i)));
       });
     }
+    // Klik kartu/gambar: kartu samping -> pindah ke kartu itu; kartu tengah -> lanjut ke kartu berikutnya.
+    // Pakai delegasi karena kartu bisa di-render ulang dari data admin.
+    track.addEventListener('click', (e) => {
+      if (e.target.closest('a, button, input, .admin-edit-pencil')) return;
+      const card = e.target.closest(cardSelector);
+      if (!card || !track.contains(card)) return;
+      const i = cards().indexOf(card);
+      goTo(i === activeIndex() ? i + 1 : i);
+    });
     function updateState() {
       const active = activeIndex();
       cards().forEach((c, i) => c.classList.toggle('is-active', i === active));

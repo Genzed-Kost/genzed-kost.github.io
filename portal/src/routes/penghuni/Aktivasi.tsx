@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthLayout } from "../../components/AuthLayout";
 import { supabase, functionsUrl } from "../../lib/supabaseClient";
 import { isPhoneID } from "../../lib/format";
+import { PrivacyConsent, usePrivacyPolicy } from "../../components/PrivacyConsent";
 
 type Step = "kode" | "otp" | "password";
 
@@ -17,6 +18,8 @@ export default function Aktivasi() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailForRecovery, setEmailForRecovery] = useState("");
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
+  const privacyPolicy = usePrivacyPolicy();
 
   async function handleVerifyInvite(e: FormEvent) {
     e.preventDefault();
@@ -98,9 +101,20 @@ export default function Aktivasi() {
       setError("Konfirmasi password nggak cocok.");
       return;
     }
+    if (!privacyAgreed) {
+      setError("Centang persetujuan Kebijakan Privasi dulu ya sebelum mengaktifkan akun.");
+      return;
+    }
     setLoading(true);
     try {
-      const { error: updateErr } = await supabase.auth.updateUser({ password: newPassword });
+      // Persetujuan privasi dicatat di metadata akun (Supabase Auth → Users → user_metadata).
+      const { error: updateErr } = await supabase.auth.updateUser({
+        password: newPassword,
+        data: {
+          privacy_consent_at: new Date().toISOString(),
+          privacy_policy_version: privacyPolicy?.version || null,
+        },
+      });
       if (updateErr) {
         setError("Gagal menyimpan password. Coba lagi.");
         return;
@@ -190,7 +204,8 @@ export default function Aktivasi() {
               placeholder="Ulangi password"
             />
           </div>
-          <button className="btn btn-primary" type="submit" disabled={loading}>
+          <PrivacyConsent policy={privacyPolicy} checked={privacyAgreed} onChange={setPrivacyAgreed} />
+          <button className="btn btn-primary" type="submit" disabled={loading || !privacyAgreed}>
             {loading ? <span className="spinner" /> : "Aktifkan Akun"}
           </button>
         </form>

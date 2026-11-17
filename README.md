@@ -107,6 +107,8 @@ Status pembangunan:
     - Mesinnya ([`ai-kost.js`](ai-kost.js)) jalan di browser pengunjung: baca [`ai-kost-data.json`](ai-kost-data.json) (FAQ, peraturan, kebijakan privasi) dan `index.html` (harga, fasilitas, lokasi), lalu cocokkan pertanyaan dengan isinya (kata dasar + sinonim). Tidak ada API key, server, atau biaya per pertanyaan.
     - Mau ubah/menambah jawaban? Edit `ai-kost-data.json` (tambah item `faq`, atau butir di `peraturan`/`privasi`) lalu push ke `main`. Pertanyaan yang belum ada jawabannya diarahkan ke WhatsApp admin.
     - Kalau AI Kost sering salah paham kata tertentu, tambahkan sinonimnya di `SYN_GROUPS` dalam `ai-kost.js`.
+    - Riwayat chat disimpan di perangkat pengunjung (localStorage) dan **dihapus otomatis kalau 8 jam nggak dipakai**.
+    - Bagian `privasi` di `ai-kost-data.json` juga jadi teks **Kebijakan Privasi** yang wajib disetujui penghuni saat aktivasi akun. Persetujuannya tercatat di Supabase → Authentication → Users → `user_metadata` (`privacy_consent_at`, `privacy_policy_version`). Kalau isi privasi berubah, update juga `privasi_versi`.
 
 ---
 

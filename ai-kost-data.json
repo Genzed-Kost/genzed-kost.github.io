@@ -1,0 +1,131 @@
+{
+  "_petunjuk": "Sumber jawaban AI Kost. Edit teks di sini lalu push ke main — AI Kost otomatis pakai isi terbaru. 'faq' = tanya-jawab, 'peraturan' & 'privasi' = per bagian, tiap butir di 'isi' jadi satu jawaban.",
+  "faq": [
+    {
+      "q": "Berapa harga sewa kamar di Genzed Kost?",
+      "a": "Mulai dari Rp 800.000/bulan, tergantung tipe kamar dan fasilitasnya. Lengkapnya ada di bagian Harga di halaman utama."
+    },
+    {
+      "q": "Gimana cara sewa kamar di sini?",
+      "a": "Hubungi admin lewat WhatsApp buat cek kamar kosong, boleh survei langsung dulu. Kalau cocok, tanda tangan kontrak dan bayar sewa bulan pertama + deposit. Setelah itu admin bakal buatin akun Portal Penghuni buat kelola tagihan."
+    },
+    {
+      "q": "Kontraknya per berapa lama? Bisa bulanan?",
+      "a": "Bisa bulanan atau siklus lain sesuai kesepakatan sama admin pas awal kontrak. Kontrak bulanan juga bisa bayar di muka beberapa bulan sekaligus dan dapat diskon — tanya admin buat jenjang diskonnya."
+    },
+    {
+      "q": "Berapa deposit yang perlu dibayar?",
+      "a": "Besarannya ditentukan admin pas awal kontrak, biasanya setara 1 bulan sewa. Ini di luar sewa bulanan."
+    },
+    {
+      "q": "Depositnya balik nggak kalau pindah/keluar kost?",
+      "a": "Balik penuh, kecuali ada kerusakan kamar atau masih ada tunggakan — itu bakal dipotong dari deposit dulu, sisanya baru dikembalikan. Rinciannya kelihatan jelas pas proses checkout lewat admin."
+    },
+    {
+      "q": "Metode pembayaran apa aja yang bisa dipakai?",
+      "a": "Transfer manual ke salah satu rekening kost (bank, QRIS, atau e-wallet) yang tercantum di Portal Penghuni, lalu upload bukti transfernya — admin yang verifikasi. Semua histori pembayaran tercatat rapi dan bisa dicek kapan aja."
+    },
+    {
+      "q": "Kalau telat bayar sewa gimana?",
+      "a": "Ada denda keterlambatan yang dihitung otomatis sesuai aturan yang berlaku — rinciannya kelihatan langsung di tagihan lewat Portal Penghuni, jadi nggak ada yang disembunyiin."
+    },
+    {
+      "q": "Fasilitas apa aja yang didapat?",
+      "a": "WiFi 150 Mbps, AC, kamar mandi dalam, rooftop, dan fasilitas lain tergantung tipe kamar — cek detailnya di bagian Fasilitas halaman utama."
+    },
+    {
+      "q": "Boleh bawa motor/mobil?",
+      "a": "Boleh, parkir tersedia di area yang sudah ditentukan. Parkir yang rapi dan jangan menghalangi akses ya."
+    },
+    {
+      "q": "Boleh terima tamu?",
+      "a": "Boleh, jam 08.00–21.00 WIB dan wajib lapor ke penjaga/admin. Tamu lawan jenis cukup ketemu di ruang tamu/rooftop, dan tamu yang mau menginap harus izin admin H-1."
+    }
+  ],
+  "peraturan": [
+    {
+      "bagian": "Jam Bertamu & Jam Malam",
+      "isi": [
+        "Tamu boleh berkunjung jam 08.00–21.00 WIB, wajib lapor ke penjaga/admin kost.",
+        "Tamu lawan jenis nggak boleh masuk ke area kamar — ketemu di ruang tamu/rooftop aja.",
+        "Tamu nginep harus izin admin H-1 dan dikenakan biaya tambahan sesuai ketentuan.",
+        "Pintu gerbang utama dikunci jam 23.00 WIB — di luar itu pakai akses kartu/kunci penghuni."
+      ]
+    },
+    {
+      "bagian": "Larangan",
+      "isi": [
+        "Dilarang merokok di dalam kamar dan area indoor — sediakan area khusus merokok kalau ada.",
+        "Dilarang keras bawa, simpan, atau konsumsi narkoba dan minuman keras di area kost.",
+        "Dilarang membawa hewan peliharaan tanpa izin tertulis dari admin.",
+        "Dilarang menyalakan alat masak berbahaya (kompor gas terbuka) di dalam kamar — pakai dapur bersama kalau tersedia."
+      ]
+    },
+    {
+      "bagian": "Kebersihan & Ketertiban",
+      "isi": [
+        "Jaga kebersihan kamar dan area bersama (dapur, kamar mandi luar, rooftop).",
+        "Sampah dibuang ke tempat yang disediakan, jangan menumpuk di depan kamar.",
+        "Jaga volume suara (musik, panggilan video, dll) terutama di atas jam 22.00 WIB.",
+        "Parkir kendaraan di area yang sudah ditentukan, rapi dan nggak menghalangi akses."
+      ]
+    },
+    {
+      "bagian": "Pembayaran Sewa",
+      "isi": [
+        "Sewa dibayar di muka sesuai siklus kontrak (bulanan/lainnya), maksimal H+3 dari tanggal jatuh tempo.",
+        "Keterlambatan pembayaran dikenakan denda sesuai ketentuan yang berlaku (info lengkap ada di invoice/portal penghuni).",
+        "Deposit dikembalikan penuh saat checkout, dipotong kalau ada kerusakan/kekurangan sesuai kondisi kamar.",
+        "Semua transaksi bisa dicek transparan lewat Portal Penghuni."
+      ]
+    },
+    {
+      "bagian": "Sanksi Pelanggaran",
+      "isi": [
+        "Pelanggaran ringan akan mendapat teguran lisan/tertulis. Pelanggaran berat (narkoba, kekerasan, atau pelanggaran berulang) bisa berujung pemutusan kontrak sepihak tanpa pengembalian deposit, sesuai kebijakan pengelola."
+      ]
+    }
+  ],
+  "privasi": [
+    {
+      "bagian": "Data yang Kami Kumpulkan",
+      "isi": [
+        "Data identitas: nama lengkap, nomor HP, email, dan foto KTP/dokumen identitas (kalau diunggah buat kontrak).",
+        "Data kontrak & pembayaran: riwayat sewa, tagihan, bukti transfer, status deposit.",
+        "Data teknis dasar saat pakai Portal Penghuni (login, aktivitas akun) buat keamanan sistem."
+      ]
+    },
+    {
+      "bagian": "Buat Apa Data Ini Dipakai",
+      "isi": [
+        "Mengelola kontrak sewa, tagihan, dan pembayaran kost.",
+        "Mengirim notifikasi penting lewat WhatsApp/email (pengingat jatuh tempo, verifikasi pembayaran, dll).",
+        "Menyelesaikan komplain atau permintaan penghuni.",
+        "Kebutuhan administrasi dan pelaporan internal pengelola kost."
+      ]
+    },
+    {
+      "bagian": "Bagaimana Kami Menjaga Data",
+      "isi": [
+        "Data disimpan di infrastruktur Supabase dengan akses dibatasi lewat kontrol keamanan (Row Level Security) — penghuni cuma bisa lihat datanya sendiri, admin yang bisa lihat semua.",
+        "Kunci rahasia (API key, kunci pembayaran) nggak pernah disimpan di kode yang bisa diakses publik.",
+        "Kami nggak menjual atau menyewakan data pribadi penghuni ke pihak ketiga mana pun.",
+        "Data dibagikan ke pihak ketiga cuma sebatas yang perlu buat operasional (mis. layanan WhatsApp/email buat kirim notifikasi), sesuai fungsinya masing-masing."
+      ]
+    },
+    {
+      "bagian": "Hak Penghuni",
+      "isi": [
+        "Berhak minta koreksi data pribadi yang salah lewat menu Komplain di Portal Penghuni.",
+        "Berhak tanya data apa aja yang kami simpan soal diri lo.",
+        "Data otomatis nggak lagi dipakai buat kebutuhan aktif kalau kontrak udah berakhir, kecuali yang wajib disimpan buat keperluan administrasi/hukum."
+      ]
+    },
+    {
+      "bagian": "Hubungi Kami",
+      "isi": [
+        "Ada pertanyaan soal data pribadi lo? Langsung aja hubungi admin lewat WhatsApp atau lewat menu Komplain di Portal Penghuni."
+      ]
+    }
+  ]
+}

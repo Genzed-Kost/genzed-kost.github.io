@@ -22,6 +22,11 @@
   // kalau path-nya milik portal, simpan URL asli lalu redirect ke app-nya.
   (function () {
     var path = location.pathname;
+    // Halaman FAQ, Peraturan & Kebijakan Privasi sudah dihapus — semua dijawab AI Kost.
+    if (/^\/(faq|peraturan|privasi)(\.html)?\/?$/.test(path)) {
+      location.replace("/#tanya-ai");
+      return;
+    }
     var isPortalRoute = /^\/(penghuni|admin|bayar)(\/|$)/.test(path);
     if (isPortalRoute) {
       sessionStorage.setItem("spa-redirect", path + location.search + location.hash);

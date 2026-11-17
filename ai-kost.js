@@ -3,11 +3,13 @@
 
    100% GRATIS: semuanya jalan di browser pengunjung. Tidak ada API key, tidak ada
    server, tidak ada biaya per pertanyaan. Cara kerjanya:
-     1. Baca langsung isi faq.html, peraturan.html, dan index.html (situs yang sedang live).
+     1. Baca ai-kost-data.json (FAQ, peraturan kost, kebijakan privasi) dan index.html
+        (harga, fasilitas, lokasi) dari situs yang sedang live.
      2. Pecah jadi potongan info (1 pertanyaan FAQ, 1 butir peraturan, 1 kartu harga, dst).
      3. Cocokkan pertanyaan pengunjung dengan potongan itu (kata dasar + sinonim + bobot
         kata langka), lalu tampilkan jawaban yang paling cocok beserta sumbernya.
-   Mau ubah jawaban? Cukup edit FAQ/peraturan/halaman utama — AI Kost otomatis ikut.
+   Mau ubah jawaban? Edit ai-kost-data.json (atau harga/fasilitas di index.html) — AI Kost otomatis ikut.
+   Buka otomatis lewat URL: tambahkan #tanya-ai (mis. https://genzed-kost.github.io/#tanya-ai).
 
    Dipasang di halaman statis:
      <script src="ai-kost.js" defer></script>
@@ -27,6 +29,7 @@
     "Berapa harga kamarnya?",
     "Boleh bawa hewan peliharaan?",
     "Gimana cara bayar sewa?",
+    "Data pribadiku dipakai buat apa?",
   ];
 
   /* ---------------- Pemrosesan bahasa sederhana ---------------- */
@@ -72,12 +75,14 @@
     ["daftar", "booking", "pesan", "survei", "survey"],
     ["fasilitas", "dapat", "tersedia", "termasuk"],
     ["portal", "login", "akun", "aplikasi"],
+    ["data", "privasi", "pribadi", "ktp", "identitas", "informasi"],
+    ["hak", "hapus", "koreksi", "ubah"],
   ];
   var SYN = {};
   SYN_GROUPS.forEach(function (g) { g.forEach(function (w) { SYN[stem(w)] = g[0]; SYN[w] = g[0]; }); });
 
   function stem(w) {
-    if (w.length > 5) w = w.replace(/(nya|kan|lah|kah|pun)$/, "");
+    if (w.length > 5) w = w.replace(/(nya|kan|lah|kah|pun|ku|mu)$/, "");
     if (w.length > 5) w = w.replace(/(an|i)$/, "");
     var pre = ["meng", "meny", "mem", "men", "me", "peng", "peny", "pem", "pen", "pe", "ber", "be", "ter", "di", "ke", "se"];
     for (var i = 0; i < pre.length; i++) {
@@ -117,37 +122,22 @@
 
   function buildKB() {
     return Promise.all([
-      fetchDoc("faq.html").catch(function () { return null; }),
-      fetchDoc("peraturan.html").catch(function () { return null; }),
+      fetch(BASE + "ai-kost-data.json", { cache: "no-cache" }).then(function (r) { if (!r.ok) throw new Error("data"); return r.json(); }),
       fetchDoc("index.html").catch(function () { return null; }),
-    ]).then(function (docs) {
+    ]).then(function (res) {
       var items = [];
-      var faq = docs[0], rules = docs[1], home = docs[2];
+      var data = res[0] || {}, home = res[1];
 
-      if (faq) {
-        faq.querySelectorAll("details").forEach(function (d) {
-          var q = clean(d.querySelector("summary") && d.querySelector("summary").textContent);
-          var a = clean(Array.prototype.map.call(d.querySelectorAll("p"), function (p) { return p.textContent; }).join(" "));
-          if (q && a) items.push({ title: q, text: a, source: "FAQ", url: "faq.html" });
+      (data.faq || []).forEach(function (f) {
+        if (f.q && f.a) items.push({ title: f.q, text: f.a, source: "FAQ" });
+      });
+      [["peraturan", "Peraturan Kost"], ["privasi", "Kebijakan Privasi"]].forEach(function (k) {
+        (data[k[0]] || []).forEach(function (sec) {
+          (sec.isi || []).forEach(function (t) {
+            items.push({ title: sec.bagian, text: t, source: k[1] + " · " + sec.bagian, titleW: 0.6 });
+          });
         });
-      }
-
-      if (rules) {
-        rules.querySelectorAll("h2").forEach(function (h) {
-          var section = noEmoji(h.textContent);
-          var el = h.nextElementSibling;
-          while (el && el.tagName !== "H2") {
-            if (el.tagName === "UL" || el.tagName === "OL") {
-              el.querySelectorAll("li").forEach(function (li) {
-                items.push({ title: section, text: clean(li.textContent), source: "Peraturan Kost · " + section, url: "peraturan.html", titleW: 0.6 });
-              });
-            } else if (el.tagName === "P") {
-              items.push({ title: section, text: clean(el.textContent), source: "Peraturan Kost · " + section, url: "peraturan.html", titleW: 0.6 });
-            }
-            el = el.nextElementSibling;
-          }
-        });
-      }
+      });
 
       if (home) {
         var priceLines = [];
@@ -217,6 +207,9 @@
     { re: /(cara|gimana|bagaimana|bisa|pake|pakai|lewat|via|metode).{0,12}(bayar|pembayaran|transfer)|metode/i, target: /metode pembayaran/i },
     { re: /(cara|gimana|bagaimana|proses|syarat).{0,15}(daftar|sewa|booking|pesan|masuk|ngekos|nge-kos|tinggal)/i, target: /cara sewa kamar/i, not: /bayar|pembayaran|transfer/i },
     { re: /gerbang|pintu|dikunci|ditutup|tutup jam|jam malam|pulang malam/i, target: /gerbang/i },
+    { re: /(data|pribadi|ktp|identitas).{0,25}(pakai|guna|buat apa|untuk apa|diapain)|(buat|untuk) apa.{0,15}data/i, target: /^Buat Apa Data/i },
+    { re: /(data|pribadi|ktp|identitas).{0,25}(aman|jaga|lindung|bocor|simpan)|(aman|jaga|lindung).{0,20}(data|ktp)/i, target: /^Bagaimana Kami Menjaga Data/i },
+    { re: /data apa|apa aja.{0,10}data|data.{0,15}(dikumpul|diminta|disimpan apa)/i, target: /^Data yang Kami Kumpulkan/i },
     { re: /(harga|biaya|tarif).{0,20}(kamar|sewa|kost|kos|bulan)|berapa(an)? (harga|sewa)/i, target: /^Harga sewa kamar per bulan/i },
   ];
 
@@ -232,7 +225,7 @@
   function intentBoost(question, it) {
     var b = 1;
     INTENTS.forEach(function (x) {
-      if (x.re.test(question) && !(x.not && x.not.test(question)) && (x.target.test(it.title) || x.target.test(it.text))) b *= 2;
+      if (x.re.test(question) && !(x.not && x.not.test(question)) && (x.target.test(it.title) || x.target.test(it.text))) b *= 3;
     });
     return b;
   }
@@ -240,7 +233,8 @@
   var SMALLTALK = [
     { re: /^(hai|halo|hallo|hello|hi|hey|p|assalamualaikum|selamat (pagi|siang|sore|malam))\b/i, text: "Halo! 👋 Aku AI Kost. Tanyain aja soal peraturan, harga kamar, fasilitas, lokasi, atau cara bayar di Genzed Kost." },
     { re: /\b(makasih|terima ?kasih|thanks|thx|tengkyu|mksh)\b/i, text: "Sama-sama! 😊 Kalau ada yang mau ditanyain lagi, tanya aja ya." },
-    { re: /\b(kamu siapa|siapa kamu|ini siapa|ai kost itu apa)\b/i, text: "Aku AI Kost, asisten otomatis Genzed Kost. Aku jawab berdasarkan isi FAQ, Peraturan Kost, dan info harga/fasilitas di situs ini." },
+    { re: /\b(kamu siapa|siapa kamu|ini siapa|ai kost itu apa)\b/i, text: "Aku AI Kost, asisten otomatis Genzed Kost. Aku jawab soal FAQ, peraturan kost, kebijakan privasi, dan info harga/fasilitas/lokasi." },
+    { re: /^(peraturan|aturan|tata tertib|faq|privasi|kebijakan privasi)( kost| kos)?\??$/i, text: "Tanyain aja aturan yang mau kamu tahu, misalnya: \"jam bertamu sampai jam berapa?\", \"boleh bawa hewan?\", \"gerbang dikunci jam berapa?\", atau \"data pribadiku dipakai buat apa?\"" },
   ];
 
   function ask(question) {
@@ -260,7 +254,7 @@
       var top = ranked[0];
       if (!top || top.cov < 0.5) {
         return {
-          text: "Hmm, aku belum nemu info soal itu di FAQ maupun Peraturan Kost 🙏 Biar pasti, langsung tanya admin lewat WhatsApp ya.",
+          text: "Hmm, aku belum nemu info soal itu 🙏 Biar pasti, langsung tanya admin lewat WhatsApp ya.",
           items: [], fallback: true,
         };
       }
@@ -274,7 +268,7 @@
       return {
         text: picked.length === 1 ? top.it.text : null,
         items: picked.map(function (p) { return p.it.text; }),
-        source: { label: top.it.source, url: BASE + top.it.url },
+        source: { label: top.it.source, url: top.it.url ? BASE + top.it.url : null },
       };
     });
   }
@@ -312,7 +306,7 @@ opacity:0;transform:translateY(16px) scale(.98);pointer-events:none;transition:o
 .aik-msg.user{align-self:flex-end;color:#fff;background:linear-gradient(120deg,#7C3AED,#DB2777);border-bottom-right-radius:6px}\
 .aik-msg ul{margin:0;padding-left:18px;white-space:normal}.aik-msg li{margin:2px 0;white-space:pre-wrap}\
 .aik-src{display:block;margin-top:8px;font-size:.72rem;color:#F9A8D4;text-decoration:none}\
-.aik-src:hover{text-decoration:underline}\
+a.aik-src:hover{text-decoration:underline}\
 .aik-wa{display:inline-flex;margin-top:8px;padding:6px 12px;border-radius:100px;background:#25D366;color:#fff;font-size:.76rem;font-weight:600;text-decoration:none}\
 .aik-typing{display:inline-flex;gap:4px;padding:4px 2px}\
 .aik-typing i{width:7px;height:7px;border-radius:50%;background:#C084FC;animation:aik-b 1s infinite ease-in-out}\
@@ -349,8 +343,8 @@ background:linear-gradient(120deg,#7C3AED,#DB2777 55%,#F97316)}\
       bubble.appendChild(ul);
     }
     if (ans.source) {
-      var a = el("a", "aik-src", "📄 Sumber: " + ans.source.label);
-      a.href = ans.source.url;
+      var a = el(ans.source.url ? "a" : "span", "aik-src", "📄 Sumber: " + ans.source.label);
+      if (ans.source.url) a.href = ans.source.url;
       bubble.appendChild(a);
     }
     if (ans.fallback) {
@@ -387,7 +381,7 @@ background:linear-gradient(120deg,#7C3AED,#DB2777 55%,#F97316)}\
       '<div class="aik-chips"></div>' +
       '<form class="aik-form"><input class="aik-input" maxlength="300" placeholder="Tulis pertanyaanmu…" aria-label="Pertanyaan untuk AI Kost">' +
       '<button class="aik-send" type="submit" aria-label="Kirim">➤</button></form>' +
-      '<div class="aik-note">Jawaban diambil otomatis dari FAQ &amp; Peraturan Kost. Untuk kepastian, konfirmasi ke admin.</div>';
+      '<div class="aik-note">Jawaban diambil otomatis dari FAQ, peraturan &amp; kebijakan privasi Genzed Kost. Untuk kepastian, konfirmasi ke admin.</div>';
 
     document.body.appendChild(fab);
     document.body.appendChild(panel);
@@ -466,6 +460,7 @@ background:linear-gradient(120deg,#7C3AED,#DB2777 55%,#F97316)}\
 
     render();
     window.AIKost.open = open;
+    if (/^#tanya-ai/.test(location.hash)) open();
     window.AIKost.close = close;
   }
 

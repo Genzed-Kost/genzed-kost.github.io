@@ -2,7 +2,7 @@
 
 Website Genzed Kost (Serang, Banten) terdiri dari dua bagian:
 
-1. **Landing page** ([`index.html`](index.html)) — halaman promosi statis (tetap statis buat SEO), plus 3 halaman info statis: [`peraturan.html`](peraturan.html) (tata tertib), [`faq.html`](faq.html) (pertanyaan umum), [`privasi.html`](privasi.html) (kebijakan privasi). Semuanya di-link dari footer. Beberapa bagian bisa diedit admin TANPA deploy ulang: statistik hero, link Google Maps, daftar lokasi strategis, item Fasilitas & Keunggulan Kami (judul/deskripsi + foto opsional, fallback ke ikon emoji), dan Penghuni Kost (teks doang: nama/umur/kegiatan/sepatah kata) — lihat tabel `landing_content`. Ada 2 cara: (a) form lewat portal **Admin → Landing Page**, atau (b) langsung di landing page itu sendiri — begitu admin login (session portal kebaca otomatis karena satu origin), muncul tombol mengambang "✏️ Mode Edit" yang nampilin ikon pensil di tiap section buat edit inline di tempat, simpan, halaman reload nampilin hasilnya. Section Testimoni otomatis pakai CTA "ajak survei kamar" selama belum ada penghuni yang diisi, lalu ganti ke kartu penghuni begitu admin isi minimal 1 entri. Modal QRIS dinamis (auto-generate + refresh tiap 50 detik) yang dulu ada di landing page sudah dihapus total — QRIS tetap sah dipakai lewat gambar QRIS asli di daftar rekening Transfer Manual.
+1. **Landing page** ([`index.html`](index.html)) — halaman promosi statis (tetap statis buat SEO), plus asisten **AI Kost** ([`ai-kost.js`](ai-kost.js)) yang menjawab semua pertanyaan soal peraturan kost, FAQ, dan kebijakan privasi (dulu halaman terpisah, sekarang isinya ada di [`ai-kost-data.json`](ai-kost-data.json)). Link lama `/faq.html`, `/peraturan.html`, `/privasi.html` otomatis dialihkan ke beranda dengan AI Kost terbuka. Beberapa bagian bisa diedit admin TANPA deploy ulang: statistik hero, link Google Maps, daftar lokasi strategis, item Fasilitas & Keunggulan Kami (judul/deskripsi + foto opsional, fallback ke ikon emoji), dan Penghuni Kost (teks doang: nama/umur/kegiatan/sepatah kata) — lihat tabel `landing_content`. Ada 2 cara: (a) form lewat portal **Admin → Landing Page**, atau (b) langsung di landing page itu sendiri — begitu admin login (session portal kebaca otomatis karena satu origin), muncul tombol mengambang "✏️ Mode Edit" yang nampilin ikon pensil di tiap section buat edit inline di tempat, simpan, halaman reload nampilin hasilnya. Section Testimoni otomatis pakai CTA "ajak survei kamar" selama belum ada penghuni yang diisi, lalu ganti ke kartu penghuni begitu admin isi minimal 1 entri. Modal QRIS dinamis (auto-generate + refresh tiap 50 detik) yang dulu ada di landing page sudah dihapus total — QRIS tetap sah dipakai lewat gambar QRIS asli di daftar rekening Transfer Manual.
 2. **Portal Penghuni & Admin** ([`portal/`](portal/)) — aplikasi login, tagihan, pembayaran, dan panel admin. Dibangun pakai React + TypeScript (Vite), backend-nya Supabase.
 
 Status pembangunan:
@@ -104,8 +104,8 @@ Status pembangunan:
     - Di Supabase dashboard → **Authentication → Users → Add user**, buat 1 user pakai email lo.
     - Di **Table Editor → profiles**, insert 1 row manual: `id` = ID user yang baru dibuat, `role` = `admin`, isi `full_name`, `email`, `phone`.
 12. **AI Kost** (tombol "🤖 Tanya AI Kost" di situs & menu AI Kost di Portal Penghuni) — **gratis, tanpa setup apa pun.**
-    - Mesinnya ([`ai-kost.js`](ai-kost.js)) jalan di browser pengunjung: baca langsung `faq.html`, `peraturan.html`, dan `index.html`, lalu cocokkan pertanyaan dengan isi halaman itu (kata dasar + sinonim). Tidak ada API key, server, atau biaya per pertanyaan.
-    - Mau ubah/menambah jawaban? Cukup edit FAQ/peraturan/halaman utama. Pertanyaan yang belum ada jawabannya diarahkan ke WhatsApp admin.
+    - Mesinnya ([`ai-kost.js`](ai-kost.js)) jalan di browser pengunjung: baca [`ai-kost-data.json`](ai-kost-data.json) (FAQ, peraturan, kebijakan privasi) dan `index.html` (harga, fasilitas, lokasi), lalu cocokkan pertanyaan dengan isinya (kata dasar + sinonim). Tidak ada API key, server, atau biaya per pertanyaan.
+    - Mau ubah/menambah jawaban? Edit `ai-kost-data.json` (tambah item `faq`, atau butir di `peraturan`/`privasi`) lalu push ke `main`. Pertanyaan yang belum ada jawabannya diarahkan ke WhatsApp admin.
     - Kalau AI Kost sering salah paham kata tertentu, tambahkan sinonimnya di `SYN_GROUPS` dalam `ai-kost.js`.
 
 ---
@@ -146,7 +146,7 @@ npm run test
 ## 5. Struktur Folder
 
 ```
-/                    ← landing page statis (index.html + peraturan/faq/privasi.html)
+/                    ← landing page statis (index.html) + AI Kost (ai-kost.js, ai-kost-data.json)
 portal/              ← source code React + TypeScript (login, dashboard, admin)
 supabase/
   migrations/        ← skema database SQL

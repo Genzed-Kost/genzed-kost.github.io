@@ -2,11 +2,11 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 
 // AI Kost di portal memakai mesin yang sama dengan widget di situs (/ai-kost.js):
 // berjalan 100% di browser, gratis, tanpa API key. Jawaban diambil dari isi
-// FAQ, Peraturan Kost, dan halaman utama.
+// ai-kost-data.json (FAQ, peraturan, kebijakan privasi) dan halaman utama.
 type Answer = {
   text: string | null;
   items: string[];
-  source?: { label: string; url: string };
+  source?: { label: string; url: string | null };
   fallback?: boolean;
 };
 type Turn = { q: string; a: Answer };
@@ -22,6 +22,7 @@ const SUGGESTIONS = [
   "Gerbang dikunci jam berapa?",
   "Kalau telat bayar ada dendanya?",
   "Boleh masak di kamar?",
+  "Data pribadiku dipakai buat apa?",
 ];
 const STORE_KEY = "aikost_portal_history_v2";
 const WA_LINK = "https://wa.link/v5vckc";
@@ -201,7 +202,7 @@ export default function AiKost() {
         </form>
       </div>
       <p style={{ fontSize: ".72rem", color: "var(--muted)", marginTop: 8, textAlign: "center" }}>
-        Jawaban diambil otomatis dari FAQ &amp; Peraturan Kost. Untuk kepastian, konfirmasi ke admin.
+        Jawaban diambil otomatis dari FAQ, peraturan &amp; kebijakan privasi Genzed Kost. Untuk kepastian, konfirmasi ke admin.
       </p>
     </div>
   );
@@ -220,11 +221,14 @@ function AnswerView({ a }: { a: Answer }) {
           ))}
         </ul>
       )}
-      {a.source && (
-        <a href={a.source.url} style={{ display: "block", marginTop: 8, fontSize: ".74rem", color: "#F9A8D4", textDecoration: "none" }}>
-          📄 Sumber: {a.source.label}
-        </a>
-      )}
+      {a.source &&
+        (a.source.url ? (
+          <a href={a.source.url} style={{ display: "block", marginTop: 8, fontSize: ".74rem", color: "#F9A8D4", textDecoration: "none" }}>
+            📄 Sumber: {a.source.label}
+          </a>
+        ) : (
+          <span style={{ display: "block", marginTop: 8, fontSize: ".74rem", color: "#F9A8D4" }}>📄 Sumber: {a.source.label}</span>
+        ))}
       {a.fallback && (
         <a
           href={WA_LINK}

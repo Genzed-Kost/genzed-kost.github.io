@@ -20,7 +20,7 @@ Beberapa bagian sengaja dibiarkan kosong/placeholder daripada diisi konten palsu
 - ⬜ **Lokasi & jarak ke tempat penting.** Sudah bisa diisi sendiri lewat **Admin →
   Landing Page**: link Google Maps asli + daftar jarak rute (bukan garis lurus — buka
   Google Maps sendiri, lihat rutenya, baru ketik jaraknya di form admin).
-- ⬜ **Review isi `peraturan.html`, `faq.html`, `privasi.html`.** Isinya ditulis generik
+- ⬜ **Review isi `ai-kost-data.json`** (FAQ, peraturan, kebijakan privasi yang dijawab AI Kost). Isinya ditulis generik
   berdasarkan pola kost pada umumnya — sesuaikan sama aturan & kebijakan asli Genzed Kost
   (jam malam, denda, dll) sebelum dianggap final.
 
@@ -49,7 +49,7 @@ Beberapa bagian sengaja dibiarkan kosong/placeholder daripada diisi konten palsu
   daftar, termasuk QRIS), nggak ada lagi 2 opsi metode yang tumpang tindih.
 - ✅ 68 unit test (`portal/src/lib/*.test.ts`) lolos semua — logika alokasi pembayaran,
   voucher, denda, bayar di muka, split payment co-tenant.
-- ✅ Semua halaman statis (`index.html`, `peraturan.html`, `faq.html`, `privasi.html`,
+- ✅ Semua halaman statis (`index.html`, `ai-kost.js`, `ai-kost-data.json`,
   `404.html`, `sitemap.xml`, `robots.txt`) live dan bisa diakses (HTTP 200).
 - ✅ Login penghuni & admin dites langsung di situs yang sudah di-deploy (bukan cuma lokal).
 - ⬜ **Cek histori run cron sesekali** — buka Supabase dashboard → Database → Cron buat

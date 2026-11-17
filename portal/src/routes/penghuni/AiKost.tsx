@@ -138,7 +138,7 @@ export default function AiKost() {
   }
 
   return (
-    <div>
+    <div className="container" style={{ paddingTop: 32, paddingBottom: 48 }}>
       <h1 style={{ fontSize: "1.5rem", marginBottom: 4 }}>
         AI Kost <span aria-hidden="true">🤖</span>
       </h1>
@@ -151,7 +151,7 @@ export default function AiKost() {
         style={{
           borderRadius: 20,
           border: "1.5px solid transparent",
-          background: "linear-gradient(var(--surface), var(--surface)) padding-box, var(--grad) border-box",
+          background: "linear-gradient(#fff, #fff) padding-box, var(--grad) border-box",
           display: "flex",
           flexDirection: "column",
           height: "min(620px, calc(100svh - 220px))",
@@ -185,9 +185,9 @@ export default function AiKost() {
                   type="button"
                   onClick={() => void ask(s)}
                   style={{
-                    background: "rgba(192,132,252,.1)",
-                    border: "1px solid rgba(192,132,252,.3)",
-                    color: "#E9D5FF",
+                    background: "#F3EEFF",
+                    border: "1px solid #E1D6FB",
+                    color: "#6D28D9",
                     borderRadius: 100,
                     padding: "6px 12px",
                     fontSize: ".8rem",
@@ -212,7 +212,7 @@ export default function AiKost() {
             style={{
               flex: 1,
               minWidth: 0,
-              background: "var(--surface2)",
+              background: "#fff",
               border: "1px solid var(--border)",
               borderRadius: 100,
               padding: "11px 16px",
@@ -262,11 +262,11 @@ function AnswerView({ a }: { a: Answer }) {
       )}
       {a.source &&
         (a.source.url ? (
-          <a href={a.source.url} style={{ display: "block", marginTop: 8, fontSize: ".74rem", color: "#F9A8D4", textDecoration: "none" }}>
+          <a href={a.source.url} style={{ display: "block", marginTop: 8, fontSize: ".74rem", color: "#BE185D", textDecoration: "none" }}>
             📄 Sumber: {a.source.label}
           </a>
         ) : (
-          <span style={{ display: "block", marginTop: 8, fontSize: ".74rem", color: "#F9A8D4" }}>📄 Sumber: {a.source.label}</span>
+          <span style={{ display: "block", marginTop: 8, fontSize: ".74rem", color: "#BE185D" }}>📄 Sumber: {a.source.label}</span>
         ))}
       {a.fallback && (
         <a

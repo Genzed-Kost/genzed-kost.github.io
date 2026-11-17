@@ -284,29 +284,29 @@
   var css = "\
 .aik-fab{position:fixed;right:20px;bottom:20px;z-index:310;display:inline-flex;align-items:center;gap:8px;\
 border:none;border-radius:100px;padding:12px 18px 12px 14px;cursor:pointer;color:#fff;font:600 .88rem 'DM Sans',system-ui,sans-serif;\
-background:linear-gradient(120deg,#7C3AED,#DB2777 55%,#F97316);box-shadow:0 14px 34px -10px rgba(219,39,119,.7);\
+background:linear-gradient(120deg,#7C3AED,#DB2777 55%,#F97316);box-shadow:0 14px 30px -12px rgba(219,39,119,.65);\
 transition:transform .2s cubic-bezier(.22,1,.36,1),box-shadow .2s}\
 .aik-fab:hover{transform:translateY(-3px);box-shadow:0 18px 40px -10px rgba(219,39,119,.85)}\
 .aik-fab-ico{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:1rem}\
 body:has(.admin-edit-fab) .aik-fab{bottom:80px}\
 .aik-panel{position:fixed;right:20px;bottom:20px;z-index:320;width:min(380px,calc(100vw - 32px));height:min(580px,calc(100svh - 40px));\
-display:flex;flex-direction:column;overflow:hidden;border-radius:22px;color:#F5F3FF;font-family:'DM Sans',system-ui,sans-serif;\
-background:linear-gradient(#14112B,#14112B) padding-box,linear-gradient(120deg,#7C3AED,#DB2777 55%,#F97316) border-box;border:1.5px solid transparent;\
-box-shadow:0 30px 80px -20px rgba(0,0,0,.7),0 0 60px -20px rgba(124,58,237,.6);\
+display:flex;flex-direction:column;overflow:hidden;border-radius:22px;color:#1C1633;font-family:'DM Sans',system-ui,sans-serif;\
+background:linear-gradient(#fff,#fff) padding-box,linear-gradient(120deg,#7C3AED,#DB2777 55%,#F97316) border-box;border:1.5px solid transparent;\
+box-shadow:0 30px 70px -24px rgba(76,29,149,.40),0 8px 24px -12px rgba(28,22,51,.18);\
 opacity:0;transform:translateY(16px) scale(.98);pointer-events:none;transition:opacity .25s,transform .3s cubic-bezier(.22,1,.36,1)}\
 .aik-panel.open{opacity:1;transform:none;pointer-events:auto}\
-.aik-head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(120deg,rgba(124,58,237,.35),rgba(219,39,119,.25) 55%,rgba(249,115,22,.2))}\
+.aik-head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(120deg,#F3EEFF,#FDF2F8 55%,#FFF4EA);border-bottom:1px solid #EFE9FB}\
 .aik-avatar{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:1.2rem;background:linear-gradient(120deg,#7C3AED,#DB2777 55%,#F97316)}\
 .aik-title{font:700 1rem 'Syne',sans-serif;line-height:1.2}\
-.aik-sub{font-size:.72rem;color:#D6D2F0}\
-.aik-x{margin-left:auto;background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:10px;cursor:pointer;font-size:1rem}\
-.aik-x:hover{background:rgba(255,255,255,.2)}\
+.aik-sub{font-size:.72rem;color:#625C7A}\
+.aik-x{margin-left:auto;background:#fff;border:1px solid #E6E0F5;color:#1C1633;width:32px;height:32px;border-radius:10px;cursor:pointer;font-size:1rem}\
+.aik-x:hover{background:#F3EEFF}\
 .aik-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}\
 .aik-msg{max-width:88%;padding:10px 13px;border-radius:16px;font-size:.88rem;line-height:1.55;word-wrap:break-word;white-space:pre-wrap}\
-.aik-msg.bot{align-self:flex-start;background:#1D1938;border:1px solid #2C2752;border-bottom-left-radius:6px}\
+.aik-msg.bot{align-self:flex-start;background:#F6F3FF;border:1px solid #E9E2FA;border-bottom-left-radius:6px}\
 .aik-msg.user{align-self:flex-end;color:#fff;background:linear-gradient(120deg,#7C3AED,#DB2777);border-bottom-right-radius:6px}\
 .aik-msg ul{margin:0;padding-left:18px;white-space:normal}.aik-msg li{margin:2px 0;white-space:pre-wrap}\
-.aik-src{display:block;margin-top:8px;font-size:.72rem;color:#F9A8D4;text-decoration:none}\
+.aik-src{display:block;margin-top:8px;font-size:.72rem;color:#BE185D;text-decoration:none}\
 a.aik-src:hover{text-decoration:underline}\
 .aik-wa{display:inline-flex;margin-top:8px;padding:6px 12px;border-radius:100px;background:#25D366;color:#fff;font-size:.76rem;font-weight:600;text-decoration:none}\
 .aik-typing{display:inline-flex;gap:4px;padding:4px 2px}\
@@ -314,17 +314,17 @@ a.aik-src:hover{text-decoration:underline}\
 .aik-typing i:nth-child(2){animation-delay:.15s;background:#F472B6}.aik-typing i:nth-child(3){animation-delay:.3s;background:#FB923C}\
 @keyframes aik-b{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-5px);opacity:1}}\
 .aik-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px}\
-.aik-chip{background:rgba(192,132,252,.1);border:1px solid rgba(192,132,252,.3);color:#E9D5FF;border-radius:100px;padding:6px 11px;\
+.aik-chip{background:#F3EEFF;border:1px solid #E1D6FB;color:#6D28D9;border-radius:100px;padding:6px 11px;\
 font:500 .76rem 'DM Sans',system-ui,sans-serif;cursor:pointer;transition:background .2s}\
-.aik-chip:hover{background:rgba(244,114,182,.18)}\
-.aik-form{display:flex;gap:8px;padding:12px;border-top:1px solid #2C2752;background:#110E25}\
-.aik-input{flex:1;min-width:0;background:#1D1938;border:1px solid #2C2752;border-radius:100px;padding:11px 15px;color:#F5F3FF;\
+.aik-chip:hover{background:#FDF2F8;border-color:#F9C9E1;color:#BE185D}\
+.aik-form{display:flex;gap:8px;padding:12px;border-top:1px solid #EFE9FB;background:#FBFAFF}\
+.aik-input{flex:1;min-width:0;background:#fff;border:1px solid #E1D9F5;border-radius:100px;padding:11px 15px;color:#1C1633;\
 font:400 .88rem 'DM Sans',system-ui,sans-serif;outline:none}\
-.aik-input:focus{border-color:#C084FC}\
+.aik-input:focus{border-color:#9333EA;box-shadow:0 0 0 3px rgba(147,51,234,.12)}\
 .aik-send{flex-shrink:0;width:42px;height:42px;border:none;border-radius:50%;cursor:pointer;color:#fff;font-size:1.05rem;\
 background:linear-gradient(120deg,#7C3AED,#DB2777 55%,#F97316)}\
 .aik-send:disabled{opacity:.45;cursor:default}\
-.aik-note{font-size:.66rem;color:#8F89B8;text-align:center;padding:0 12px 10px;background:#110E25}\
+.aik-note{font-size:.66rem;color:#7A7493;text-align:center;padding:0 12px 10px;background:#FBFAFF}\
 @media (max-width:480px){.aik-panel{right:8px;bottom:8px;width:calc(100vw - 16px);height:calc(100svh - 16px)}.aik-fab-txt{display:none}.aik-fab{padding:12px}}\
 @media (prefers-reduced-motion:reduce){.aik-panel,.aik-fab{transition:none}.aik-typing i{animation:none}}";
 

@@ -15,7 +15,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,.6)",
+        background: "rgba(28,22,51,.45)",
         display: "grid",
         placeItems: "center",
         padding: "5vw",
@@ -25,7 +25,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "var(--surface)",
+          background: "#fff",
           border: "1px solid var(--border)",
           borderRadius: "var(--r-xl)",
           width: "100%",

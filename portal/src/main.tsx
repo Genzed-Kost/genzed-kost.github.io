@@ -20,7 +20,7 @@ if (missingEnv) {
         <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "1.4rem", marginBottom: 12 }}>
           Portal Belum Dikonfigurasi
         </h1>
-        <p style={{ color: "#A5A0C8", fontSize: ".9rem" }}>
+        <p style={{ color: "#625C7A", fontSize: ".9rem" }}>
           Backend Supabase portal ini belum disambungkan. Kalau lo admin Genzed Kost, cek README bagian "Setup Supabase" dan
           "Setup GitHub Actions" — pastikan secret <code>VITE_SUPABASE_URL</code> dan <code>VITE_SUPABASE_ANON_KEY</code> sudah
           diisi di GitHub repo, lalu deploy ulang.

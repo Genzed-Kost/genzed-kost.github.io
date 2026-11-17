@@ -67,7 +67,7 @@ export function AdminLayout() {
               fontWeight: 600,
               textDecoration: "none",
               color: isActive ? "var(--accent)" : "var(--muted)",
-              background: isActive ? "rgba(192,132,252,.12)" : "transparent",
+              background: isActive ? "#F3EEFF" : "transparent",
             })}
           >
             <span aria-hidden="true">{item.icon}</span> {item.label}
@@ -110,7 +110,7 @@ export function AdminLayout() {
 
       <style>{`
         @media (max-width: 900px) {
-          .admin-sidebar { display: ${menuOpen ? "flex" : "none"} !important; position: fixed !important; z-index: 20; width: 78vw !important; max-width: 260px; box-shadow: 0 0 40px rgba(0,0,0,.5); }
+          .admin-sidebar { display: ${menuOpen ? "flex" : "none"} !important; position: fixed !important; z-index: 20; width: 78vw !important; max-width: 260px; box-shadow: 0 0 40px rgba(28,22,51,.35); }
           .admin-topbar { display: flex !important; }
         }
       `}</style>

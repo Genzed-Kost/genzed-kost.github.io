@@ -62,7 +62,7 @@ export function PortalLayout() {
               fontWeight: 600,
               textDecoration: "none",
               color: isActive ? "var(--accent)" : "var(--muted)",
-              background: isActive ? "rgba(192,132,252,.12)" : "transparent",
+              background: isActive ? "#F3EEFF" : "transparent",
             })}
           >
             <span aria-hidden="true">{item.icon}</span> {item.label}
@@ -111,7 +111,7 @@ export function PortalLayout() {
 
       <style>{`
         @media (max-width: 860px) {
-          .portal-sidebar { display: ${menuOpen ? "flex" : "none"} !important; position: fixed !important; z-index: 20; width: 78vw !important; max-width: 280px; box-shadow: 0 0 40px rgba(0,0,0,.5); }
+          .portal-sidebar { display: ${menuOpen ? "flex" : "none"} !important; position: fixed !important; z-index: 20; width: 78vw !important; max-width: 280px; box-shadow: 0 0 40px rgba(28,22,51,.35); }
           .portal-topbar { display: flex !important; }
         }
       `}</style>

@@ -1,24 +1,24 @@
 /* Token warna & radius sama persis dengan landing page (index.html root)
    supaya portal terasa satu kesatuan visual. */
 :root {
-  --bg:          #0C0A1D;
-  --surface:     #14112B;
-  --surface2:    #1D1938;
-  --border:      #2C2752;
-  --border-h:    rgba(192,132,252,.28);
-  --text:        #F5F3FF;
-  --muted:       #A5A0C8;
-  --accent:      #C084FC;
-  --accent-dark: #9333EA;
+  --bg:          #FFFFFF;
+  --surface:     #F8F6FF;
+  --surface2:    #F1EDFC;
+  --border:      #E6E0F5;
+  --border-h:    rgba(147,51,234,.35);
+  --text:        #1C1633;
+  --muted:       #625C7A;
+  --accent:      #9333EA;
+  --accent-dark: #7E22CE;
   --wa:          #25D366;
-  --danger:      #F25555;
-  --warn:        #F3CC00;
-  --success:     #4ECDC4;
-  --accent-2:    #F472B6;
-  --accent-3:    #FB923C;
-  --accent-4:    #22D3EE;
+  --danger:      #DC2626;
+  --warn:        #B45309;
+  --success:     #0F766E;
+  --accent-2:    #DB2777;
+  --accent-3:    #EA580C;
+  --accent-4:    #0891B2;
   --grad:        linear-gradient(120deg, #7C3AED 0%, #DB2777 55%, #F97316 100%);
-  --grad-soft:   linear-gradient(120deg, rgba(124,58,237,.16), rgba(219,39,119,.12) 55%, rgba(249,115,22,.10));
+  --grad-soft:   linear-gradient(120deg, rgba(124,58,237,.10), rgba(219,39,119,.08) 55%, rgba(249,115,22,.07));
   --r:           16px;
   --r-xl:        24px;
   --ease-out:    cubic-bezier(.22,1,.36,1);

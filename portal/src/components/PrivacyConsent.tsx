@@ -51,8 +51,9 @@ export function PrivacyConsent({
     <div
       style={{
         border: "1px solid var(--border)",
-        background: "var(--surface)",
+        background: "#fff",
         borderRadius: "var(--r)",
+        boxShadow: "0 2px 12px -4px rgba(76,29,149,.10)",
         padding: 14,
         marginBottom: 16,
         fontSize: ".82rem",

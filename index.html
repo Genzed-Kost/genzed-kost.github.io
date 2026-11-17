@@ -39,7 +39,7 @@
 <meta name="twitter:title" content="Genzed Kost | Kost Serang Dekat Untirta &amp; Pamulang">
 <meta name="twitter:description" content="Kost modern di Serang, Banten. Dekat Untirta &amp; Pamulang. WiFi 150 Mbps, AC, KM Dalam. Mulai Rp 800rb/bulan.">
 
-<meta name="theme-color" content="#0C0A1D">
+<meta name="theme-color" content="#FFFFFF">
 
 <!-- ═══ Structured Data: LodgingBusiness ═══ -->
 <script type="application/ld+json">
@@ -129,15 +129,15 @@
 <style>
 /* ===== TOKENS ===== */
 :root {
-  --bg: #0C0A1D;
-  --surface:     #14112B;
-  --surface2:    #1D1938;
-  --border:      #2C2752;
-  --border-h:    rgba(192,132,252,.28);
-  --text:        #F5F3FF;
-  --muted:       #A5A0C8;
-  --accent:      #C084FC;
-  --accent-dark: #9333EA;
+  --bg:          #FFFFFF;
+  --surface:     #F8F6FF;
+  --surface2:    #F1EDFC;
+  --border:      #E6E0F5;
+  --border-h:    rgba(147,51,234,.35);
+  --text:        #1C1633;
+  --muted:       #625C7A;
+  --accent:      #9333EA;
+  --accent-dark: #7E22CE;
   --wa:          #25D366;
   --r:           16px;
   --r-xl:        24px;
@@ -190,7 +190,7 @@ nav.scrolled { background: rgba(12,10,29,.97); box-shadow: 0 1px 0 var(--border)
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
-  box-shadow: 0 0 0 1.5px rgba(192,132,252,.4);
+  box-shadow: 0 0 0 1.5px rgba(147,51,234,.35);
 }
 .nav-logo span { color: var(--accent); }
 .nav-links { display: flex; gap: 28px; list-style: none; }
@@ -351,12 +351,12 @@ nav.scrolled { background: rgba(12,10,29,.97); box-shadow: 0 1px 0 var(--border)
 }
 .floating-tag.tag-1 {
   top: -14px; right: -14px;
-  box-shadow: 0 12px 40px rgba(0,0,0,.5);
+  box-shadow: 0 12px 30px -10px rgba(76,29,149,.25);
   animation: float1 4s ease-in-out infinite;
 }
 .floating-tag.tag-2 {
   bottom: 72px; left: -18px;
-  box-shadow: 0 12px 40px rgba(0,0,0,.5);
+  box-shadow: 0 12px 30px -10px rgba(76,29,149,.25);
   animation: float2 5s ease-in-out infinite;
 }
 @keyframes float1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
@@ -631,7 +631,7 @@ section { padding: clamp(64px, 10vw, 96px) 5vw; }
 }
 .map-marker-dist {
   font-size: .58rem; font-weight: 600; color: var(--text);
-  background: rgba(12,10,29,.7); padding: 1px 6px; border-radius: 100px; white-space: nowrap;
+  background: rgba(255,255,255,.9); padding: 1px 6px; border-radius: 100px; white-space: nowrap;
 }
 /* Hover overlay */
 .map-hover-overlay {
@@ -712,7 +712,7 @@ section { padding: clamp(64px, 10vw, 96px) 5vw; }
   transition: transform .3s var(--ease-out), box-shadow .3s;
   will-change: transform;
 }
-.price-card:hover { transform: translateY(-8px); box-shadow: 0 24px 60px rgba(0,0,0,.3); }
+.price-card:hover { transform: translateY(-8px); }
 .price-card.popular {
   background: linear-gradient(150deg, rgba(192,132,252,.08) 0%, var(--surface) 55%);
   border-color: rgba(192,132,252,.38);
@@ -886,7 +886,7 @@ footer {
   position: fixed; bottom: 20px; right: 20px; z-index: 300;
   background: var(--accent); color: #111; border: none; border-radius: 100px;
   padding: 12px 20px; font-weight: 700; font-size: .82rem; cursor: pointer;
-  box-shadow: 0 12px 32px rgba(0,0,0,.45); font-family: inherit;
+  box-shadow: 0 12px 28px -10px rgba(219,39,119,.55); font-family: inherit;
 }
 .admin-edit-fab.on { background: #fff; }
 .admin-edit-pencil {
@@ -942,23 +942,33 @@ body.admin-edit-on .admin-edit-pencil { display: inline-flex; }
 .admin-list-actions button:disabled { opacity: .3; cursor: default; }
 .admin-upload-label { font-size: .62rem; color: var(--accent); cursor: pointer; text-align: center; background: none; border: none; font-family: inherit; }
 
-/* ===== TEMA BERWARNA (gradien ungu → pink → oranye) ===== */
+/* ===== TEMA TERANG (putih + gradien ungu → pink → oranye) ===== */
 :root {
-  --accent-2: #F472B6;
-  --accent-3: #FB923C;
-  --accent-4: #22D3EE;
+  --accent-2: #DB2777;
+  --accent-3: #EA580C;
+  --accent-4: #0891B2;
   --grad:      linear-gradient(120deg, #7C3AED 0%, #DB2777 55%, #F97316 100%);
-  --grad-soft: linear-gradient(120deg, rgba(124,58,237,.16), rgba(219,39,119,.12) 55%, rgba(249,115,22,.10));
-  --grad-text: linear-gradient(100deg, #C084FC 0%, #F472B6 50%, #FDBA74 100%);
+  --grad-soft: linear-gradient(120deg, rgba(124,58,237,.10), rgba(219,39,119,.08) 55%, rgba(249,115,22,.07));
+  --grad-text: linear-gradient(100deg, #7C3AED 0%, #DB2777 55%, #EA580C 100%);
+  --shadow-sm: 0 2px 10px -2px rgba(76,29,149,.10);
+  --shadow-md: 0 18px 44px -18px rgba(76,29,149,.28);
 }
 body {
   background:
-    radial-gradient(1200px 600px at 85% -10%, rgba(124,58,237,.22), transparent 60%),
-    radial-gradient(900px 500px at -10% 30%, rgba(219,39,119,.12), transparent 60%),
+    radial-gradient(1100px 560px at 90% -10%, rgba(167,139,250,.22), transparent 60%),
+    radial-gradient(900px 500px at -10% 30%, rgba(244,114,182,.12), transparent 60%),
     var(--bg);
   background-attachment: fixed;
 }
+::-webkit-scrollbar-track { background: #F1EDFC; }
 ::-webkit-scrollbar-thumb { background: var(--grad); }
+.hero-title, .section-title, .upgrade-title { text-shadow: none; }
+
+/* Navbar & menu HP */
+nav { background: rgba(255,255,255,.82); }
+nav.scrolled { background: rgba(255,255,255,.96); box-shadow: 0 6px 24px -12px rgba(76,29,149,.25); }
+.mobile-menu { background: rgba(255,255,255,.97); }
+.mobile-menu a.btn-wa { color: #fff; }
 
 /* Teks gradien */
 .hero-title .line-accent, .nav-logo span, .footer-brand .logo span,
@@ -970,94 +980,118 @@ body {
   background: var(--grad-text); -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent; display: inline-block;
 }
-.nav-logo-img { box-shadow: 0 0 0 2px #fff2, 0 0 0 4px rgba(219,39,119,.45); }
+.nav-logo-img { box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(219,39,119,.35); }
 
-/* Glow hero lebih hidup */
-.hero-glow  { background: radial-gradient(circle, rgba(124,58,237,.35) 0%, rgba(219,39,119,.12) 40%, transparent 68%); filter: blur(10px); }
-.hero-glow-2{ width: 520px; height: 520px; background: radial-gradient(circle, rgba(34,211,238,.18) 0%, transparent 70%); }
-.hero-badge { background: var(--grad-soft); border-color: rgba(244,114,182,.35); color: #F9A8D4; }
-.hero-badge-dot { background: var(--accent-2); box-shadow: 0 0 10px var(--accent-2); }
+/* Hero */
+.hero-glow   { background: radial-gradient(circle, rgba(167,139,250,.35) 0%, rgba(244,114,182,.14) 40%, transparent 68%); filter: blur(10px); }
+.hero-glow-2 { width: 520px; height: 520px; background: radial-gradient(circle, rgba(34,211,238,.16) 0%, transparent 70%); }
+.hero-badge { background: var(--grad-soft); border-color: rgba(219,39,119,.25); color: #BE185D; }
+.hero-badge-dot { background: var(--accent-2); box-shadow: 0 0 10px rgba(219,39,119,.6); }
 .hero-location { color: var(--accent-2); }
-.room-card-main { box-shadow: 0 30px 80px -20px rgba(124,58,237,.45); }
-.room-img-placeholder::before { background: var(--grad-soft); }
+.room-card-main { background: #fff; box-shadow: 0 30px 70px -28px rgba(124,58,237,.45); }
+.room-img-placeholder { background: linear-gradient(135deg, #F5F1FF 0%, #FCE7F3 60%, #FFF1E6 100%); }
+.room-img-placeholder::before { background: none; }
 .room-card-info .room-price { color: var(--accent-3); }
-.floating-tag { background: rgba(20,17,43,.85); border-color: rgba(192,132,252,.3); }
+.floating-tag { background: rgba(255,255,255,.92); border-color: rgba(147,51,234,.18); box-shadow: var(--shadow-md) !important; }
 
 /* Tombol */
 .btn-primary, .popular-badge, .map-hover-label, .admin-edit-fab {
   background: var(--grad); color: #fff;
 }
-.btn-primary { box-shadow: 0 8px 24px -6px rgba(219,39,119,.55); background-size: 160% 100%; transition: transform .15s var(--ease-out), box-shadow .2s, background-position .4s; }
-.btn-primary:hover { background-position: 100% 0; box-shadow: 0 16px 40px -8px rgba(219,39,119,.65); }
-.btn-ghost:hover, .btn-login-nav:hover { border-color: var(--accent-2); background: rgba(244,114,182,.08); }
-.nav-clock { color: #67E8F9; background: rgba(34,211,238,.08); border-color: rgba(34,211,238,.25); }
+.btn-primary { box-shadow: 0 10px 24px -10px rgba(219,39,119,.6); background-size: 160% 100%; transition: transform .15s var(--ease-out), box-shadow .2s, background-position .4s; }
+.btn-primary:hover { background-position: 100% 0; box-shadow: 0 16px 36px -12px rgba(219,39,119,.65); }
+.btn-ghost, .btn-login-nav { background: #fff; border-color: var(--border); }
+.btn-ghost:hover, .btn-login-nav:hover { border-color: var(--accent-2); background: #FDF2F8; }
+.nav-clock { color: #0E7490; background: rgba(8,145,178,.07); border-color: rgba(8,145,178,.22); }
+.admin-edit-fab.on { background: #1C1633; }
 
-/* Marquee gradien */
+/* Marquee */
 .marquee-wrap { background: var(--grad); }
 .marquee-track span { color: #fff; }
 
-/* Section dengan nuansa warna berbeda */
-#fitur, #fasilitas, #testimoni, footer { background: rgba(20,17,43,.72); }
-#fitur      { background: linear-gradient(180deg, rgba(124,58,237,.10), rgba(20,17,43,.7)); }
-#fasilitas  { background: linear-gradient(180deg, rgba(34,211,238,.07), rgba(20,17,43,.7)); }
-#testimoni  { background: linear-gradient(180deg, rgba(219,39,119,.08), rgba(20,17,43,.7)); }
-#upgrade::before { background: radial-gradient(circle, rgba(249,115,22,.12) 0%, transparent 65%); }
+/* Section bernuansa */
+#fitur      { background: linear-gradient(180deg, #F6F1FF, #FFFFFF); }
+#fasilitas  { background: linear-gradient(180deg, #EEFBFD, #FFFFFF); }
+#testimoni  { background: linear-gradient(180deg, #FDF2F8, #FFFFFF); }
+footer      { background: #F8F6FF; }
+#upgrade::before { background: radial-gradient(circle, rgba(249,115,22,.10) 0%, transparent 65%); }
 
 /* Kartu */
-.fitur-card, .facility-item, .price-card, .place-item, .penghuni-card {
-  border-color: rgba(192,132,252,.14);
+.fitur-card, .facility-item, .price-card, .place-item, .penghuni-card, .map-open-btn, .payment-info, .testimonial-cta {
+  background-color: #fff; border-color: var(--border); box-shadow: var(--shadow-sm);
 }
 .fitur-card.is-active, .facility-item.is-active {
   border-color: transparent;
-  background: linear-gradient(var(--bg), var(--bg)) padding-box, var(--grad) border-box;
-  box-shadow: 0 20px 50px -20px rgba(219,39,119,.5);
+  background: linear-gradient(#fff, #fff) padding-box, var(--grad) border-box;
+  box-shadow: 0 22px 48px -22px rgba(219,39,119,.45);
 }
-.fitur-card-img { background: linear-gradient(135deg, #2A1B5E, #1D1938 60%, #3B1530); }
-.fitur-card:hover .fitur-card-img { background: linear-gradient(135deg, #3B1F7A, #2A1B5E 50%, #5A1A3E); }
-.upgrade-img-block:nth-child(odd)  { background: linear-gradient(135deg, rgba(124,58,237,.28), rgba(29,25,56,.9)); }
-.upgrade-img-block:nth-child(even) { background: linear-gradient(135deg, rgba(249,115,22,.22), rgba(29,25,56,.9)); }
-.upgrade-img-block.accent-bg { background: linear-gradient(135deg, rgba(219,39,119,.30), rgba(34,211,238,.15)); }
-.upgrade-tag { background: rgba(249,115,22,.12); border-color: rgba(249,115,22,.3); color: #FDBA74; }
+.fitur-card-img { background: linear-gradient(135deg, #EDE7FF, #F7F3FF 55%, #FDE8F3); }
+.fitur-card:hover .fitur-card-img { background: linear-gradient(135deg, #E2D7FF, #F1EAFF 50%, #FBD5E8); }
+.fitur-card-img::after { background: none; }
+.upgrade-img-block { border-color: var(--border); box-shadow: var(--shadow-sm); }
+.upgrade-img-block:nth-child(odd)  { background: linear-gradient(135deg, #EDE7FF, #FFFFFF); }
+.upgrade-img-block:nth-child(even) { background: linear-gradient(135deg, #FFEDD5, #FFFFFF); }
+.upgrade-img-block.accent-bg { background: linear-gradient(135deg, #FCE7F3, #E0F7FB); }
+.upgrade-tag { background: #FFF1E6; border-color: rgba(234,88,12,.25); color: #C2410C; }
 .perk-item::before { color: var(--accent-2); }
-
+.carousel-dot { background: #DDD6F3; }
 .carousel-dot.is-active { background: var(--grad); }
 
+/* Ikon fasilitas: warna lebih pekat biar kelihatan di latar putih */
+.fac-icon { background: #F3EEFF; border-color: #E4DAFB; }
+.fac-icon.c-blue   { background: #E8F1FF; border-color: #C9DDFE; }
+.fac-icon.c-cyan   { background: #E3FAFC; border-color: #B8EEF5; }
+.fac-icon.c-teal   { background: #E3F8F2; border-color: #B6EBDD; }
+.fac-icon.c-red    { background: #FFECEC; border-color: #FDCACA; }
+.fac-icon.c-orange { background: #FFF1E6; border-color: #FED7B5; }
+.fac-icon.c-amber  { background: #FFF7E0; border-color: #FDE7A7; }
+.fac-icon.c-purple { background: #F3EEFF; border-color: #DCCEFD; }
+
 /* Lokasi */
-.map-placeholder { background: radial-gradient(circle at 50% 50%, rgba(124,58,237,.22), var(--surface) 70%); }
-.map-radar-ring { border-color: rgba(192,132,252,.22); }
-.map-center-pin { background: var(--grad); box-shadow: 0 0 0 12px rgba(219,39,119,.18); }
+.map-placeholder { background: radial-gradient(circle at 50% 50%, #EFE8FF, #FFFFFF 72%); box-shadow: var(--shadow-sm); }
+.map-radar-ring { border-color: rgba(147,51,234,.20); }
+.map-center-pin { background: var(--grad); box-shadow: 0 0 0 12px rgba(219,39,119,.14); }
 .map-center-pin::after { background: #fff; }
-.map-marker-icon { border-color: rgba(34,211,238,.4); }
-.place-item:hover { border-color: rgba(244,114,182,.45); }
-.place-item:nth-child(6n+1) .place-icon { background: rgba(124,58,237,.18); }
-.place-item:nth-child(6n+2) .place-icon { background: rgba(34,211,238,.15); }
-.place-item:nth-child(6n+3) .place-icon { background: rgba(244,114,182,.16); }
-.place-item:nth-child(6n+4) .place-icon { background: rgba(251,146,60,.16); }
-.place-item:nth-child(6n+5) .place-icon { background: rgba(52,211,153,.15); }
-.place-item:nth-child(6n+6) .place-icon { background: rgba(250,204,21,.15); }
-.place-dist { color: #67E8F9; }
-.map-open-btn { color: #F9A8D4; }
+.map-marker-icon { background: #fff; border-color: rgba(8,145,178,.35); box-shadow: var(--shadow-sm); }
+.map-marker-dist { background: rgba(255,255,255,.9); color: var(--text); box-shadow: var(--shadow-sm); }
+.map-placeholder:hover .map-hover-overlay { background: rgba(255,255,255,.55); }
+.place-item:hover { border-color: rgba(219,39,119,.35); }
+.place-item:nth-child(6n+1) .place-icon { background: #F3EEFF; }
+.place-item:nth-child(6n+2) .place-icon { background: #E3FAFC; }
+.place-item:nth-child(6n+3) .place-icon { background: #FDF2F8; }
+.place-item:nth-child(6n+4) .place-icon { background: #FFF1E6; }
+.place-item:nth-child(6n+5) .place-icon { background: #E3F8F2; }
+.place-item:nth-child(6n+6) .place-icon { background: #FFF7E0; }
+.place-dist { color: #0E7490; }
+.map-open-btn { color: #BE185D; }
 
 /* Testimoni CTA */
 .testimonial-cta {
   border-color: transparent;
-  background: linear-gradient(145deg, #1A1436, var(--bg)) padding-box, var(--grad) border-box;
+  background: linear-gradient(145deg, #FFFFFF, #FBF7FF) padding-box, var(--grad) border-box;
 }
 
 /* Harga */
+.price-card:hover { box-shadow: var(--shadow-md); }
 .price-card.popular {
   border-color: transparent;
-  background: linear-gradient(150deg, #2A1650 0%, var(--surface) 60%) padding-box, var(--grad) border-box;
-  box-shadow: 0 30px 80px -30px rgba(219,39,119,.6);
+  background: linear-gradient(150deg, #F7F0FF 0%, #FFFFFF 60%) padding-box, var(--grad) border-box;
+  box-shadow: 0 30px 70px -32px rgba(219,39,119,.5);
 }
 .price-tag-sub { color: var(--accent-3); }
 .features-list li::before { background: var(--grad); color: #fff; }
-.pay-badge.primary { border-color: rgba(244,114,182,.4); color: #F9A8D4; }
+.pay-badge { background: #fff; }
+.pay-badge.primary { border-color: rgba(219,39,119,.35); color: #BE185D; }
 
 /* Footer */
-.social-btn:hover { background: var(--grad-soft); border-color: rgba(244,114,182,.45); }
+.social-btn { background: #fff; }
+.social-btn:hover { background: var(--grad-soft); border-color: rgba(219,39,119,.35); }
 .footer-col ul li a:hover { color: var(--accent-2); }
-.admin-edit-pencil { color: var(--accent-2); }
+
+/* Mode edit admin */
+.admin-edit-pencil { color: var(--accent-2); background: #FDF2F8; border-color: rgba(219,39,119,.3); }
+.admin-modal-card { background: #fff; box-shadow: 0 30px 80px -20px rgba(28,22,51,.35); }
+.admin-field input, .admin-list-input { background: #fff; }
 </style>
 </head>
 <body>
@@ -1140,36 +1174,36 @@ body {
     <div class="room-card-main">
       <div class="room-img-placeholder">
         <svg class="room-svg" viewBox="0 0 380 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <rect x="20" y="220" width="340" height="8" rx="2" fill="#2C2752"/>
-          <rect x="20" y="50" width="340" height="172" fill="#1D1938"/>
-          <rect x="20" y="50" width="8" height="172" fill="#222"/>
-          <rect x="352" y="50" width="8" height="172" fill="#222"/>
-          <rect x="60" y="70" width="100" height="80" rx="4" fill="url(#wg)" stroke="#333" stroke-width="2"/>
-          <line x1="110" y1="70" x2="110" y2="150" stroke="#333" stroke-width="1.5"/>
-          <line x1="60" y1="110" x2="160" y2="110" stroke="#333" stroke-width="1.5"/>
-          <rect x="180" y="140" width="170" height="90" rx="8" fill="#221D42" stroke="#333" stroke-width="1.5"/>
-          <rect x="180" y="140" width="170" height="28" rx="8" fill="#2E2E2E"/>
-          <rect x="192" y="148" width="52" height="20" rx="6" fill="#3A3A3A"/>
-          <rect x="254" y="148" width="52" height="20" rx="6" fill="#3A3A3A"/>
-          <rect x="180" y="168" width="170" height="62" fill="#1E1E1E" stroke="#333" stroke-width="1"/>
-          <rect x="182" y="170" width="166" height="4" rx="1" fill="rgba(192,132,252,0.15)"/>
-          <rect x="30" y="168" width="130" height="58" rx="6" fill="#202020" stroke="#333" stroke-width="1.5"/>
-          <rect x="50" y="140" width="72" height="48" rx="4" fill="#161616" stroke="#333" stroke-width="1.5"/>
-          <rect x="52" y="142" width="68" height="44" rx="3" fill="rgba(192,132,252,0.08)"/>
-          <rect x="58" y="148" width="30" height="3" rx="1" fill="rgba(192,132,252,0.3)"/>
-          <rect x="58" y="155" width="50" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>
-          <rect x="82" y="186" width="6" height="6" rx="1" fill="#222"/>
+          <rect x="20" y="220" width="340" height="8" rx="2" fill="#D9CFF5"/>
+          <rect x="20" y="50" width="340" height="172" fill="#FBF9FF"/>
+          <rect x="20" y="50" width="8" height="172" fill="#E4DCF7"/>
+          <rect x="352" y="50" width="8" height="172" fill="#E4DCF7"/>
+          <rect x="60" y="70" width="100" height="80" rx="4" fill="url(#wg)" stroke="#CFC4EE" stroke-width="2"/>
+          <line x1="110" y1="70" x2="110" y2="150" stroke="#CFC4EE" stroke-width="1.5"/>
+          <line x1="60" y1="110" x2="160" y2="110" stroke="#CFC4EE" stroke-width="1.5"/>
+          <rect x="180" y="140" width="170" height="90" rx="8" fill="#EDE5FF" stroke="#CFC4EE" stroke-width="1.5"/>
+          <rect x="180" y="140" width="170" height="28" rx="8" fill="#E0D4FA"/>
+          <rect x="192" y="148" width="52" height="20" rx="6" fill="#FFFFFF"/>
+          <rect x="254" y="148" width="52" height="20" rx="6" fill="#FFFFFF"/>
+          <rect x="180" y="168" width="170" height="62" fill="#F5F0FF" stroke="#CFC4EE" stroke-width="1"/>
+          <rect x="182" y="170" width="166" height="4" rx="1" fill="rgba(219,39,119,0.25)"/>
+          <rect x="30" y="168" width="130" height="58" rx="6" fill="#F3EEFF" stroke="#CFC4EE" stroke-width="1.5"/>
+          <rect x="50" y="140" width="72" height="48" rx="4" fill="#FFFFFF" stroke="#CFC4EE" stroke-width="1.5"/>
+          <rect x="52" y="142" width="68" height="44" rx="3" fill="rgba(124,58,237,0.06)"/>
+          <rect x="58" y="148" width="30" height="3" rx="1" fill="rgba(124,58,237,0.45)"/>
+          <rect x="58" y="155" width="50" height="2" rx="1" fill="rgba(124,58,237,0.18)"/>
+          <rect x="82" y="186" width="6" height="6" rx="1" fill="#E4DCF7"/>
           <circle cx="148" cy="148" r="12" fill="rgba(192,132,252,0.12)"/>
-          <line x1="148" y1="158" x2="148" y2="172" stroke="#555" stroke-width="2"/>
-          <ellipse cx="148" cy="144" rx="10" ry="5" fill="#2C2752" stroke="#444" stroke-width="1"/>
+          <line x1="148" y1="158" x2="148" y2="172" stroke="#BFB2E6" stroke-width="2"/>
+          <ellipse cx="148" cy="144" rx="10" ry="5" fill="#D9CFF5" stroke="#CFC4EE" stroke-width="1"/>
           <ellipse cx="148" cy="144" rx="5" ry="2.5" fill="rgba(192,132,252,0.5)"/>
-          <rect x="220" y="54" width="80" height="26" rx="6" fill="#17142F" stroke="#333" stroke-width="1"/>
-          <rect x="224" y="63" width="72" height="6" rx="2" fill="#242424"/>
+          <rect x="220" y="54" width="80" height="26" rx="6" fill="#FFFFFF" stroke="#CFC4EE" stroke-width="1"/>
+          <rect x="224" y="63" width="72" height="6" rx="2" fill="#EDE5FF"/>
           <circle cx="288" cy="58" r="3" fill="rgba(192,132,252,0.8)"/>
           <defs>
             <linearGradient id="wg" x1="60" y1="70" x2="160" y2="150" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="rgba(192,132,252,0.06)"/>
-              <stop offset="100%" stop-color="rgba(100,150,200,0.08)"/>
+              <stop offset="0%" stop-color="rgba(167,139,250,0.30)"/>
+              <stop offset="100%" stop-color="rgba(125,211,252,0.35)"/>
             </linearGradient>
           </defs>
         </svg>

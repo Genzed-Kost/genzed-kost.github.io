@@ -41,6 +41,10 @@
     {
       "q": "Boleh terima tamu?",
       "a": "Boleh, jam 08.00–21.00 WIB dan wajib lapor ke penjaga/admin. Tamu lawan jenis cukup ketemu di ruang tamu/rooftop, dan tamu yang mau menginap harus izin admin H-1."
+    },
+    {
+      "q": "Ada denah atau gambaran kamarnya nggak?",
+      "a": "Ada! Buka Denah 3D di genzed-kost.github.io/denah.html — bisa lihat tata letak lorong dan 3 kamar, lalu masuk ke tiap kamar: kasur dengan bantal & guling, AC, kamar mandi dalam, dan router WiFi di dinding Kamar 1. Ukurannya perkiraan; buat lihat langsung, ajak survei lewat WhatsApp admin."
     }
   ],
   "peraturan": [

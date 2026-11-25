@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Denah 3D Genzed Kost</title>
+<meta name="description" content="Denah 3D interaktif Genzed Kost, Serang: lihat tata letak lorong dan masuk ke tiap kamar — kasur, bantal, guling, AC, kamar mandi dalam, dan WiFi.">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FFFFFF; --surface: #F8F6FF; --surface2: #F1EDFC; --border: #E6E0F5;
+  --text: #1C1633; --muted: #625C7A; --accent: #9333EA; --accent-2: #DB2777;
+  --grad: linear-gradient(120deg, #7C3AED 0%, #DB2777 55%, #F97316 100%);
+  --shadow: 0 18px 44px -18px rgba(76,29,149,.35);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', system-ui, sans-serif; overflow: hidden; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; }
+#scene { position: fixed; inset: 0; touch-action: none; }
+#scene canvas { display: block; }
+
+/* Bar atas */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: flex; align-items: center; gap: 14px;
+  padding: 12px 16px; background: rgba(255,255,255,.88); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+.back { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--muted); font-size: .85rem; font-weight: 600; white-space: nowrap; }
+.back:hover { color: var(--accent-2); }
+.title { min-width: 0; }
+.title h1 { font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 700; line-height: 1.2; }
+.title h1 span { background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.title p { font-size: .72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-actions { margin-left: auto; display: flex; gap: 8px; }
+.chip-btn {
+  border: 1px solid var(--border); background: #fff; border-radius: 100px; padding: 7px 12px; cursor: pointer;
+  font-size: .78rem; font-weight: 600; white-space: nowrap; transition: border-color .2s, background .2s;
+}
+.chip-btn:hover { border-color: var(--accent-2); }
+.chip-btn[aria-pressed="true"] { background: #1C1633; color: #fff; border-color: #1C1633; }
+
+/* Panel kontrol */
+.panel {
+  position: fixed; left: 16px; top: 78px; z-index: 15; width: 268px;
+  background: rgba(255,255,255,.95); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow);
+  padding: 16px; display: flex; flex-direction: column; gap: 14px;
+}
+.panel h2 { font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.view-btn {
+  border: 1px solid var(--border); background: #fff; border-radius: 10px; padding: 8px 6px; cursor: pointer;
+  font-size: .76rem; font-weight: 600; transition: all .15s;
+}
+.view-btn:hover { border-color: var(--accent); color: var(--accent); }
+.view-btn.active { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+.room-list { display: flex; flex-direction: column; gap: 6px; }
+.room-btn {
+  display: flex; align-items: center; gap: 10px; text-align: left; cursor: pointer;
+  border: 1px solid var(--border); background: #fff; border-radius: 12px; padding: 9px 10px; transition: all .15s;
+}
+.room-btn:hover { border-color: var(--accent-2); transform: translateX(2px); }
+.room-btn.active { border-color: transparent; background: linear-gradient(#fff,#fff) padding-box, var(--grad) border-box; }
+.room-num { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex-shrink: 0; color: #fff; font-family: 'Syne', sans-serif; font-weight: 700; background: var(--grad); }
+.room-btn b { display: block; font-size: .84rem; }
+.room-btn small { display: block; font-size: .7rem; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: .72rem; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.hint { font-size: .72rem; color: var(--muted); line-height: 1.5; }
+
+/* Kartu info kamar */
+.info {
+  position: fixed; right: 16px; top: 78px; z-index: 15; width: 290px;
+  background: rgba(255,255,255,.96); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow);
+  padding: 16px; display: none;
+}
+.info.show { display: block; }
+.info .eyebrow { font-size: .66rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-2); }
+.info h3 { font-family: 'Syne', sans-serif; font-size: 1.1rem; margin: 2px 0 4px; }
+.info .size { font-size: .76rem; color: var(--muted); margin-bottom: 10px; }
+.info ul { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.info li { display: flex; gap: 8px; font-size: .82rem; align-items: flex-start; }
+.info li span:first-child { width: 22px; flex-shrink: 0; text-align: center; }
+.info .row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* Mode jalan */
+.walk-hud { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 15; display: none; flex-direction: column; align-items: center; gap: 10px; }
+.walk-hud.show { display: flex; }
+.walk-tip { background: rgba(28,22,51,.82); color: #fff; font-size: .76rem; padding: 7px 14px; border-radius: 100px; white-space: nowrap; }
+.walk-exit { background: #fff; border: 1px solid var(--border); border-radius: 100px; padding: 8px 16px; font-size: .8rem; font-weight: 600; cursor: pointer; box-shadow: var(--shadow); }
+.pad { display: none; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(2, 52px); gap: 6px; }
+.pad button { border: none; border-radius: 14px; background: rgba(255,255,255,.92); box-shadow: var(--shadow); font-size: 1.2rem; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: none; }
+.pad button:active, .pad button.on { background: #1C1633; color: #fff; }
+.pad .up { grid-column: 2; grid-row: 1; } .pad .left { grid-column: 1; grid-row: 2; } .pad .down { grid-column: 2; grid-row: 2; } .pad .right { grid-column: 3; grid-row: 2; }
+.touch .pad { display: grid; }
+.crosshair { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(28,22,51,.5); z-index: 12; display: none; pointer-events: none; }
+.walking .crosshair { display: block; }
+
+/* Label 3D */
+.lbl { font: 600 12px 'DM Sans', system-ui, sans-serif; color: var(--text); background: rgba(255,255,255,.92); border: 1px solid var(--border); padding: 4px 9px; border-radius: 100px; white-space: nowrap; box-shadow: 0 4px 14px -6px rgba(28,22,51,.35); pointer-events: none; }
+.lbl.room { font: 700 13px 'Syne', sans-serif; background: #1C1633; color: #fff; border: none; padding: 6px 12px; }
+.lbl.room small { display: block; font: 500 10px 'DM Sans', sans-serif; opacity: .75; text-align: center; }
+.lbl.wifi { background: #E3FAFC; border-color: #A5E9F2; color: #0E7490; }
+.lbl.ac { background: #E8F1FF; border-color: #C9DDFE; color: #1D4ED8; }
+.lbl.km { background: #E3F8F2; border-color: #B6EBDD; color: #0F766E; }
+.lbl.dim { color: var(--muted); font-weight: 500; }
+.no-labels .lbl { display: none; }
+.walking .lbl.area { display: none; }
+
+.loading { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: #fff; transition: opacity .4s; }
+.loading.hide { opacity: 0; pointer-events: none; }
+.loading div { text-align: center; color: var(--muted); font-size: .85rem; }
+.loading b { display: block; font-family: 'Syne', sans-serif; font-size: 1.2rem; color: var(--text); margin-bottom: 4px; }
+.err { max-width: 420px; padding: 0 20px; }
+
+@media (max-width: 760px) {
+  .top-actions .chip-btn.hide-sm { display: none; }
+  .title p { display: none; }
+  .panel { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; padding: 12px; gap: 10px; border-radius: 16px; }
+  .panel .hint, .panel .legend { display: none; }
+  .room-list { flex-direction: row; overflow-x: auto; scrollbar-width: none; }
+  .room-btn { flex: 1 0 auto; padding: 7px 9px; }
+  .room-btn small { display: none; }
+  .info { left: 8px; right: 8px; top: 64px; width: auto; padding: 12px; }
+  .info ul { display: none; }
+  .info.expanded ul { display: flex; }
+  .walking .panel { display: none; }
+  .walk-hud { bottom: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .room-btn:hover { transform: none; } }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="scene" aria-label="Denah 3D Genzed Kost"></div>
+<div class="crosshair"></div>
+
+<header class="topbar">
+  <a class="back" href="index.html">← Beranda</a>
+  <div class="title">
+    <h1>Denah 3D <span>Genzed Kost</span></h1>
+    <p>Dibuat dari video bangunan · ukuran perkiraan</p>
+  </div>
+  <div class="top-actions">
+    <button class="chip-btn" id="btnLabels" aria-pressed="true">Label</button>
+    <button class="chip-btn hide-sm" id="btnRoof" aria-pressed="false">Plafon</button>
+  </div>
+</header>
+
+<aside class="panel" id="panel">
+  <div>
+    <h2>Tampilan</h2>
+    <div class="btn-grid">
+      <button class="view-btn" data-view="top">Denah atas</button>
+      <button class="view-btn active" data-view="orbit">3D</button>
+      <button class="view-btn" data-view="corridor">Jalan-jalan</button>
+    </div>
+  </div>
+  <div>
+    <h2>Masuk kamar</h2>
+    <div class="room-list" id="roomList"></div>
+  </div>
+  <div class="legend">
+    <span><i style="background:#F3EEFF;border:1px solid #CFC4EE"></i>Kamar</span>
+    <span><i style="background:#E3F8F2;border:1px solid #9ADFCB"></i>Kamar mandi</span>
+    <span><i style="background:#FFF7E0;border:1px solid #F5D77A"></i>Lorong</span>
+    <span><i style="background:#EEE8E2;border:1px solid #CDBFB2"></i>Parkir & tangga</span>
+  </div>
+  <p class="hint">Klik kamar di gambar untuk masuk. Di dalam: geser layar untuk melihat sekeliling, jalan dengan W A S D / tombol panah.</p>
+</aside>
+
+<section class="info" id="info" aria-live="polite">
+  <div class="eyebrow" id="infoEyebrow">Kamar</div>
+  <h3 id="infoTitle"></h3>
+  <div class="size" id="infoSize"></div>
+  <ul id="infoList"></ul>
+  <div class="row" id="infoActions"></div>
+</section>
+
+<div class="walk-hud" id="walkHud">
+  <div class="pad" id="pad">
+    <button class="up" data-k="f" aria-label="Maju">▲</button>
+    <button class="left" data-k="l" aria-label="Kiri">◀</button>
+    <button class="down" data-k="b" aria-label="Mundur">▼</button>
+    <button class="right" data-k="r" aria-label="Kanan">▶</button>
+  </div>
+  <div class="walk-tip" id="walkTip">Geser untuk melihat · W A S D / panah untuk jalan</div>
+  <button class="walk-exit" id="walkExit">⤢ Kembali ke tampilan 3D</button>
+</div>
+
+<div class="loading" id="loading"><div><b>Genzed Kost</b>Menyiapkan denah 3D…</div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+/* ════════════════════════════════════════════════════════════════
+   UKURAN (meter, perkiraan dari video). Sumbu: x = lebar (kiri → kanan
+   dilihat dari depan), z = kedalaman (depan/jalan → belakang), y = tinggi.
+   ════════════════════════════════════════════════════════════════ */
+const H = 3.0, T = 0.15;            // tinggi plafon, tebal dinding
+const COR_X = 2.6;                  // lorong: x 0..2.6 ; kamar: x 2.6..6.8
+const RIGHT_X = 6.8;
+const TERRACE_Z = 1.5;              // teras depan z 0..1.5
+const ROOMS = [
+  { id: 1, name: 'Kamar 1', tag: 'Depan', z0: 1.5, z1: 5.0, wifi: true },
+  { id: 2, name: 'Kamar 2', tag: 'Tengah', z0: 5.0, z1: 8.5 },
+  { id: 3, name: 'Kamar 3', tag: 'Belakang', z0: 8.5, z1: 12.0 },
+];
+const BACK_Z = 16;                  // area belakang (parkir + tangga) z 12..16
+const BATH_X = 5.2;                 // kamar mandi: x 5.2..6.8, 1,7 m terakhir tiap kamar
+const BATH_D = 1.7;
+
+const container = document.getElementById('scene');
+const isTouch = matchMedia('(pointer: coarse)').matches;
+if (isTouch) document.body.classList.add('touch');
+
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+} catch (e) {
+  document.getElementById('loading').innerHTML = '<div class="err"><b>Perangkat belum mendukung 3D</b>Browser ini tidak bisa menampilkan WebGL. Coba buka lewat Chrome/Safari terbaru.<br><br><a href="index.html">← Kembali ke beranda</a></div>';
+  throw e;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+container.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(innerWidth, innerHeight);
+Object.assign(labelRenderer.domElement.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: 5 });
+document.body.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#F4F1FB');
+scene.fog = new THREE.Fog('#F4F1FB', 40, 90);
+
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.05, 200);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.49;
+controls.minDistance = 4;
+controls.maxDistance = 45;
+controls.target.set(3.4, 0, 8);
+
+/* ── Cahaya ── */
+scene.add(new THREE.HemisphereLight('#FFFFFF', '#D9CFC2', 1.25));
+const sun = new THREE.DirectionalLight('#FFF6E8', 1.6);
+sun.position.set(-8, 18, -6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 50 });
+sun.shadow.bias = -0.0004;
+sun.target.position.set(3.4, 0, 8);
+scene.add(sun, sun.target);
+
+/* ── Tekstur buatan (canvas) ── */
+function canvasTex(w, h, draw, repeat) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  if (repeat) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeat[0], repeat[1]); }
+  return t;
+}
+const tileTex = (sx, sz, base, grout, tile = 0.6) => canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = base; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(150,140,170,${Math.random() * 0.05})`; g.beginPath(); g.arc(Math.random() * w, Math.random() * h, 20 + Math.random() * 40, 0, 7); g.fill(); }
+  g.strokeStyle = grout; g.lineWidth = 3; g.strokeRect(0, 0, w, h);
+}, [sx / tile, sz / tile]);
+const patternTex = (sx, sz) => canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#EDE7E0'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#C9B8A6';
+  g.beginPath(); g.moveTo(w / 2, 20); g.lineTo(w - 20, h / 2); g.lineTo(w / 2, h - 20); g.lineTo(20, h / 2); g.closePath(); g.fill();
+  g.fillStyle = '#EDE7E0'; g.beginPath(); g.arc(w / 2, h / 2, 46, 0, 7); g.fill();
+  g.strokeStyle = '#B9A896'; g.lineWidth = 3; g.strokeRect(0, 0, w, h);
+}, [sx / 0.4, sz / 0.4]);
+const rosterTex = (sx, sy) => canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#E9DFC9'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#CDBE9F'; g.lineWidth = 6; g.strokeRect(0, 0, w, h);
+  g.fillStyle = '#B9A884';
+  g.beginPath(); g.moveTo(w / 2, 34); g.lineTo(w - 34, h / 2); g.lineTo(w / 2, h - 34); g.lineTo(34, h / 2); g.closePath(); g.fill();
+  g.globalCompositeOperation = 'destination-out';
+  g.fillRect(48, h / 2 - 9, 60, 18); g.fillRect(w - 108, h / 2 - 9, 60, 18);
+}, [sx / 0.3, sy / 0.3]);
+const pvcTex = (sx, sz) => canvasTex(128, 128, (g, w, h) => {
+  g.fillStyle = '#F1F1F4'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#E2E2E8'; g.fillRect(0, 0, w, 4);
+}, [sx / 0.2, sz / 0.2]);
+const doorTex = canvasTex(128, 320, (g, w, h) => {
+  g.fillStyle = '#8A4F2A'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#6E3C1F'; g.lineWidth = 5;
+  [[14, 14, 44, 120], [70, 14, 44, 120], [14, 150, 100, 60], [14, 226, 44, 80], [70, 226, 44, 80]].forEach(([x, y, a, b]) => g.strokeRect(x, y, a, b));
+  for (let i = 0; i < 18; i++) { g.strokeStyle = `rgba(60,30,10,${Math.random() * 0.12})`; g.lineWidth = 1; g.beginPath(); const x = Math.random() * w; g.moveTo(x, 0); g.lineTo(x + Math.random() * 6, h); g.stroke(); }
+});
+
+/* ── Material ── */
+const M = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0, ...o });
+const mat = {
+  wall: M('#FBFAFD'), wallOut: M('#F2F1F6'), wood: M('#8A4F2A', { roughness: 0.6 }), woodDark: M('#5E3419', { roughness: 0.6 }),
+  door: new THREE.MeshStandardMaterial({ map: doorTex, roughness: 0.55 }), glass: M('#2B2F3A', { roughness: 0.1, metalness: 0.3, transparent: true, opacity: 0.75 }),
+  white: M('#FFFFFF', { roughness: 0.35 }), ceramic: M('#FDFDFE', { roughness: 0.15 }), steel: M('#D5D9E0', { roughness: 0.3, metalness: 0.25 }),
+  dark: M('#24242C', { roughness: 0.5 }), sheet: M('#E9E3FB'), sheet2: M('#D9CFF7'), pillow: M('#FFFFFF', { roughness: 0.95 }),
+  bolster: M('#FCE7F3', { roughness: 0.95 }), mattress: M('#F7F5FF', { roughness: 0.95 }), bamboo: M('#C9A36A', { roughness: 0.8 }),
+  ground: M('#D8CDBE', { roughness: 1 }), brick: M('#B5654A'), concrete: M('#B9B6B2', { roughness: 0.95 }),
+  mirror: M('#E4EEF7', { roughness: 0.08, metalness: 0.2 }), mint: M('#CDEEE5'),
+};
+mat.bathWall = new THREE.MeshStandardMaterial({ map: tileTex(1.2, 1.2, '#D7EFE8', '#A9CFC3', 0.3), roughness: 0.3 });
+const floorMat = (x0, z0, x1, z1, kind) => {
+  const sx = x1 - x0, sz = z1 - z0;
+  const map = kind === 'bath' ? tileTex(sx, sz, '#E1F4EE', '#B2D6CB', 0.3)
+    : kind === 'pattern' ? patternTex(sx, sz)
+    : kind === 'terrace' ? tileTex(sx, sz, '#E9E4DC', '#CFC6B8', 0.4)
+    : tileTex(sx, sz, kind === 'room' ? '#F6F2FF' : '#FFF9E8', '#DCD7E6');
+  return new THREE.MeshStandardMaterial({ map, roughness: 0.35 });
+};
+
+/* ── Helper geometri ── */
+const colliders = [];  // kotak-kotak yang menghalangi jalan (x0,z0,x1,z1)
+function box(w, h, d, m, x, y, z, { shadow = true, collide = false, parent = scene } = {}) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+  mesh.position.set(x, y, z);
+  mesh.castShadow = shadow; mesh.receiveShadow = true;
+  parent.add(mesh);
+  if (collide) colliders.push([x - w / 2, z - d / 2, x + w / 2, z + d / 2]);
+  return mesh;
+}
+// Dinding lurus dengan lubang (pintu/jendela/ventilasi). axis 'z' = dinding di garis x tetap.
+function wall(axis, fixed, from, to, holes = [], m = mat.wall) {
+  const cuts = new Set([from, to]);
+  holes.forEach((h) => { cuts.add(Math.max(from, h.a)); cuts.add(Math.min(to, h.b)); });
+  const xs = [...cuts].sort((a, b) => a - b);
+  for (let i = 0; i < xs.length - 1; i++) {
+    const a = xs[i], b = xs[i + 1];
+    if (b - a < 1e-4) continue;
+    const covering = holes.filter((h) => h.a < b - 1e-4 && h.b > a + 1e-4).sort((p, q) => p.y0 - q.y0);
+    let y = 0;
+    const solids = [];
+    covering.forEach((h) => { if (h.y0 > y) solids.push([y, h.y0]); y = Math.max(y, h.y1); });
+    if (y < H) solids.push([y, H]);
+    solids.forEach(([y0, y1]) => {
+      const len = b - a, mid = (a + b) / 2, hh = y1 - y0, cy = (y0 + y1) / 2;
+      const collide = y0 < 1.7;
+      if (axis === 'z') box(T, hh, len, m, fixed, cy, mid, { collide });
+      else box(len, hh, T, m, mid, cy, fixed, { collide });
+    });
+  }
+}
+function floor(x0, z0, x1, z1, kind, y = 0) {
+  const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0);
+  const mesh = new THREE.Mesh(g, floorMat(x0, z0, x1, z1, kind));
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.set((x0 + x1) / 2, y + 0.002, (z0 + z1) / 2);
+  mesh.receiveShadow = true;
+  scene.add(mesh);
+  return mesh;
+}
+const labels = [];
+function label(text, x, y, z, cls = '', small, room = null, always = false) {
+  const el = document.createElement('div');
+  el.className = 'lbl ' + cls;
+  el.innerHTML = small ? `${text}<small>${small}</small>` : text;
+  const o = new CSS2DObject(el);
+  o.position.set(x, y, z);
+  o.userData = { room, always, area: cls.includes('area') };
+  labels.push(o);
+  scene.add(o);
+  return o;
+}
+
+/* ════════════════ BANGUNAN ════════════════ */
+// Tanah & lantai
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), mat.ground);
+ground.rotation.x = -Math.PI / 2; ground.position.set(3.4, -0.06, 8); ground.receiveShadow = true; scene.add(ground);
+box(RIGHT_X + 0.3, 0.06, BACK_Z + 0.3, mat.concrete, RIGHT_X / 2, -0.03, BACK_Z / 2, { shadow: false });
+floor(0, 0, RIGHT_X, TERRACE_Z, 'terrace');
+floor(0, TERRACE_Z, COR_X, 12, 'corridor');
+floor(0, 12, RIGHT_X, BACK_Z, 'pattern');
+const roomFloors = [];
+ROOMS.forEach((r) => {
+  const f = floor(COR_X, r.z0, BATH_X, r.z1, 'room'); f.userData.room = r.id; roomFloors.push(f);
+  const f2 = floor(BATH_X, r.z0, RIGHT_X, r.z1 - BATH_D, 'room'); f2.userData.room = r.id; roomFloors.push(f2);
+  const fb = floor(BATH_X, r.z1 - BATH_D, RIGHT_X, r.z1, 'bath', -0.02); fb.userData.room = r.id; roomFloors.push(fb);
+});
+
+// Dinding kiri (lorong) dengan 2 panel roster
+const rosterHoles = [{ a: 2.6, b: 5.6, y0: 0.9, y1: 2.5 }, { a: 7.0, b: 10.0, y0: 0.9, y1: 2.5 }];
+wall('z', -T / 2, 0, BACK_Z, rosterHoles, mat.wallOut);
+rosterHoles.forEach((h) => {
+  const w = h.b - h.a, hh = h.y1 - h.y0;
+  const rm = new THREE.MeshStandardMaterial({ map: rosterTex(w, hh), transparent: true, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.9 });
+  const p = new THREE.Mesh(new THREE.BoxGeometry(T * 0.8, hh, w), rm);
+  p.position.set(-T / 2, (h.y0 + h.y1) / 2, (h.a + h.b) / 2); p.castShadow = true;
+  scene.add(p);
+});
+// Dinding kanan & belakang
+wall('z', RIGHT_X + T / 2, TERRACE_Z, BACK_Z, [], mat.wallOut);
+wall('x', BACK_Z + T / 2, -T, RIGHT_X + T, [], mat.wallOut);
+// Dinding depan kamar 1 (menghadap teras) dengan jendela
+wall('x', TERRACE_Z, COR_X, RIGHT_X, [{ a: 4.3, b: 5.5, y0: 1.0, y1: 2.2 }]);
+// Dinding pembatas lorong ↔ kamar: pintu, jendela tinggi, 3 ventilasi per kamar (seperti di video)
+const corHoles = [];
+ROOMS.forEach((r) => {
+  r.door = { a: r.z0 + 0.35, b: r.z0 + 1.15 };
+  r.win = { a: r.z0 + 1.45, b: r.z0 + 1.95 };
+  corHoles.push({ ...r.door, y0: 0, y1: 2.1 }, { ...r.win, y0: 0.7, y1: 2.2 });
+  [[r.z0 + 0.4, r.z0 + 0.7], [r.z0 + 0.82, r.z0 + 1.12], [r.z0 + 1.55, r.z0 + 1.85]].forEach(([a, b]) => corHoles.push({ a, b, y0: 2.42, y1: 2.62 }));
+});
+wall('z', COR_X, TERRACE_Z, 12, corHoles);
+// Dinding antar kamar & belakang kamar 3
+ROOMS.forEach((r) => wall('x', r.z1, COR_X, RIGHT_X));
+// Plafon (disembunyikan di tampilan atas)
+const ceiling = new THREE.Group();
+const ceil = new THREE.Mesh(new THREE.PlaneGeometry(RIGHT_X, BACK_Z), new THREE.MeshStandardMaterial({ map: pvcTex(RIGHT_X, BACK_Z), roughness: 0.6, side: THREE.DoubleSide }));
+ceil.rotation.x = Math.PI / 2; ceil.position.set(RIGHT_X / 2, H, BACK_Z / 2); ceiling.add(ceil);
+ceiling.visible = false;
+scene.add(ceiling);
+
+// Kusen pintu/jendela/ventilasi lorong + daun pintu
+const frameMat = mat.wood;
+function frame(x, za, zb, y0, y1, depth = T + 0.04) {
+  const t = 0.06;
+  box(depth, t, zb - za + t * 2, frameMat, x, y1 + t / 2, (za + zb) / 2, { shadow: false });
+  if (y0 > 0) box(depth, t, zb - za + t * 2, frameMat, x, y0 - t / 2, (za + zb) / 2, { shadow: false });
+  box(depth, y1 - y0, t, frameMat, x, (y0 + y1) / 2, za - t / 2, { shadow: false });
+  box(depth, y1 - y0, t, frameMat, x, (y0 + y1) / 2, zb + t / 2, { shadow: false });
+}
+function hingedDoor(px, pz, width, height, openAngle, m = mat.door) {
+  const pivot = new THREE.Group();
+  pivot.position.set(px, 0, pz);
+  const leaf = box(0.04, height, width, m, 0, height / 2, width / 2, { parent: pivot });
+  box(0.05, 0.03, 0.12, mat.steel, 0.045, 1.0, width - 0.1, { parent: pivot, shadow: false });
+  box(0.05, 0.03, 0.12, mat.steel, -0.045, 1.0, width - 0.1, { parent: pivot, shadow: false });
+  pivot.rotation.y = openAngle;
+  scene.add(pivot);
+  return { pivot, leaf };
+}
+ROOMS.forEach((r) => {
+  frame(COR_X, r.door.a, r.door.b, 0, 2.1);
+  r.doorObj = hingedDoor(COR_X + T / 2, r.door.a, r.door.b - r.door.a, 2.05, 1.35);
+  frame(COR_X, r.win.a, r.win.b, 0.7, 2.2);
+  box(0.03, 1.5, r.win.b - r.win.a, mat.glass, COR_X, 1.45, (r.win.a + r.win.b) / 2, { shadow: false });
+  corHoles.filter((h) => h.y0 > 2.4 && h.a > r.z0 && h.b < r.z1).forEach((h) => {
+    frame(COR_X, h.a, h.b, h.y0, h.y1, T + 0.02);
+    box(0.02, h.y1 - h.y0, h.b - h.a, mat.dark, COR_X + 0.03, (h.y0 + h.y1) / 2, (h.a + h.b) / 2, { shadow: false });
+  });
+});
+// Jendela depan kamar 1
+box(1.2, 1.2, 0.03, mat.glass, 4.9, 1.6, TERRACE_Z, { shadow: false });
+[[4.3, 5.5]].forEach(() => {
+  box(1.32, 0.06, T + 0.04, frameMat, 4.9, 2.23, TERRACE_Z, { shadow: false });
+  box(1.32, 0.06, T + 0.04, frameMat, 4.9, 0.97, TERRACE_Z, { shadow: false });
+  box(0.06, 1.2, T + 0.04, frameMat, 4.27, 1.6, TERRACE_Z, { shadow: false });
+  box(0.06, 1.2, T + 0.04, frameMat, 5.53, 1.6, TERRACE_Z, { shadow: false });
+  box(0.04, 1.2, T + 0.04, frameMat, 4.9, 1.6, TERRACE_Z, { shadow: false });
+});
+
+/* ════════════════ ISI KAMAR ════════════════ */
+const animated = [];
+function bed(r) {
+  const zc = r.z0 + 0.8, x1 = RIGHT_X - 0.05, len = 2.0, x0 = x1 - len, w = 1.2, xc = (x0 + x1) / 2;
+  box(len, 0.28, w, mat.wood, xc, 0.14, zc, { collide: true });
+  box(len - 0.04, 0.24, w - 0.04, mat.mattress, xc, 0.4, zc);
+  box(0.08, 1.0, w + 0.04, mat.woodDark, x1 - 0.04, 0.5, zc);
+  // Seprai
+  box(len - 0.5, 0.03, w - 0.02, mat.sheet, xc - 0.22, 0.535, zc);
+  box(0.32, 0.06, w + 0.02, mat.sheet2, x0 + 0.3, 0.55, zc);
+  // Bantal (2) dan guling
+  const pillowGeo = new RoundedBoxGeometry(0.42, 0.13, 0.5, 4, 0.06);
+  [-0.27, 0.27].forEach((dz) => {
+    const p = new THREE.Mesh(pillowGeo, mat.pillow); p.position.set(x1 - 0.33, 0.6, zc + dz); p.rotation.z = 0.12; p.castShadow = true; scene.add(p);
+  });
+  const g = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.8, 6, 14), mat.bolster);
+  g.rotation.z = Math.PI / 2; g.position.set(xc + 0.1, 0.64, zc + w / 2 - 0.16); g.castShadow = true; scene.add(g);
+  [-0.25, 0, 0.25].forEach((dx) => {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.101, 0.008, 6, 20), M('#F9A8D4'));
+    ring.rotation.y = Math.PI / 2; ring.position.set(xc + 0.1 + dx, 0.64, zc + w / 2 - 0.16); scene.add(ring);
+  });
+  label('Kasur · bantal · guling', xc - 0.2, 0.95, zc, 'dim', null, r.id);
+}
+function ac(r) {
+  const x = RIGHT_X - 0.13, y = 2.5, z = r.z0 + 0.8;
+  const body = new THREE.Mesh(new RoundedBoxGeometry(0.22, 0.29, 0.88, 3, 0.04), mat.white);
+  body.position.set(x, y, z); body.castShadow = true; scene.add(body);
+  box(0.01, 0.04, 0.7, mat.dark, x - 0.112, y - 0.09, z, { shadow: false });
+  const led = box(0.01, 0.02, 0.02, new THREE.MeshStandardMaterial({ color: '#22C55E', emissive: '#22C55E', emissiveIntensity: 2 }), x - 0.112, y + 0.06, z + 0.34, { shadow: false });
+  animated.push((t) => { led.material.emissiveIntensity = 1.2 + Math.sin(t * 2) * 0.8; });
+  label('❄️ AC', x - 0.3, y + 0.3, z, 'ac', null, r.id);
+}
+function wardrobe(r) {
+  const x = COR_X + 0.42, z = r.z1 - 0.65;
+  box(0.6, 1.9, 1.0, M('#C69C6D', { roughness: 0.6 }), x, 0.95, z, { collide: true });
+  box(0.01, 1.8, 0.01, mat.woodDark, x + 0.305, 0.95, z);
+  [-0.06, 0.06].forEach((d) => box(0.03, 0.18, 0.02, mat.steel, x + 0.31, 1.0, z + d, { shadow: false }));
+}
+function desk(r) {
+  const x = 4.2, z = r.z1 - 0.35;
+  box(1.1, 0.04, 0.55, M('#D4B08A', { roughness: 0.55 }), x, 0.75, z, { collide: true });
+  [[-0.5, -0.22], [0.5, -0.22], [-0.5, 0.22], [0.5, 0.22]].forEach(([dx, dz]) => box(0.04, 0.73, 0.04, mat.woodDark, x + dx, 0.365, z + dz));
+  box(0.42, 0.04, 0.42, M('#7C3AED', { roughness: 0.7 }), x, 0.46, z - 0.55);
+  box(0.42, 0.45, 0.04, M('#7C3AED', { roughness: 0.7 }), x, 0.7, z - 0.76);
+  box(0.36, 0.22, 0.02, mat.dark, x, 0.9, z + 0.18, { shadow: false }); // monitor/laptop
+}
+function lamp(r) {
+  const x = (COR_X + RIGHT_X) / 2 - 0.4, z = (r.z0 + r.z1) / 2 - 0.4;
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.03, 24), new THREE.MeshStandardMaterial({ color: '#FFFFFF', emissive: '#FFF5DD', emissiveIntensity: 1.4 }));
+  disc.position.set(x, H - 0.02, z); ceiling.add(disc);
+  const pl = new THREE.PointLight('#FFF3DC', 0, 7, 1.6); pl.position.set(x, H - 0.3, z); scene.add(pl); r.light = pl;
+}
+function bathroom(r) {
+  const zb0 = r.z1 - BATH_D, zb1 = r.z1;
+  // Dinding kamar mandi + pintu
+  const bd = { a: zb0 + 0.25, b: zb0 + 0.9 };
+  wall('z', BATH_X, zb0, zb1, [{ ...bd, y0: 0, y1: 2.0 }], mat.bathWall);
+  wall('x', zb0, BATH_X, RIGHT_X, [], mat.bathWall);
+  frame(BATH_X, bd.a, bd.b, 0, 2.0);
+  // Pintu kamar mandi membuka ke arah kamar (lebih lega untuk kamar mandi kecil)
+  r.bathDoor = hingedDoor(BATH_X - T / 2, bd.a, bd.b - bd.a, 1.95, -1.3, M('#E9E6EF', { roughness: 0.5 }));
+  r.bath = { x0: BATH_X, x1: RIGHT_X, z0: zb0, z1: zb1 };
+  // Kloset duduk
+  const kx = RIGHT_X - 0.4, kz = zb0 + 0.55;
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.14, 0.38, 20), mat.ceramic); base.position.set(kx - 0.05, 0.19, kz); base.castShadow = true; scene.add(base);
+  const seat = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.035, 10, 24), mat.ceramic); seat.rotation.x = Math.PI / 2; seat.scale.set(1.15, 1, 1); seat.position.set(kx - 0.08, 0.4, kz); scene.add(seat);
+  box(0.18, 0.36, 0.42, mat.ceramic, RIGHT_X - 0.12, 0.6, kz);
+  colliders.push([kx - 0.3, kz - 0.25, RIGHT_X, kz + 0.25]);
+  // Wastafel + cermin di dinding depan kamar mandi
+  const sx = BATH_X + 0.95, sz = zb0 + 0.25;
+  const basin = new THREE.Mesh(new RoundedBoxGeometry(0.48, 0.16, 0.36, 3, 0.04), mat.ceramic); basin.position.set(sx, 0.82, sz); basin.castShadow = true; scene.add(basin);
+  box(0.04, 0.12, 0.04, mat.steel, sx, 0.95, sz - 0.12); box(0.04, 0.03, 0.12, mat.steel, sx, 1.0, sz - 0.08);
+  box(0.06, 0.7, 0.06, mat.ceramic, sx, 0.37, sz - 0.08);
+  box(0.46, 0.6, 0.02, mat.mirror, sx, 1.35, zb0 + T / 2 + 0.02, { shadow: false });
+  // Shower di pojok belakang
+  const shx = RIGHT_X - 0.35, shz = zb1 - 0.35;
+  box(0.6, 0.04, 0.6, M('#DDEBE7', { roughness: 0.3 }), shx, 0.0, shz, { shadow: false });
+  box(0.03, 1.4, 0.03, mat.steel, RIGHT_X - 0.06, 1.4, zb1 - 0.1);
+  const head = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.07, 0.03, 20), mat.steel); head.position.set(RIGHT_X - 0.2, 2.12, zb1 - 0.25); head.rotation.x = 0.4; scene.add(head);
+  box(0.3, 0.02, 0.02, mat.steel, RIGHT_X - 0.13, 2.12, zb1 - 0.12);
+  box(0.12, 0.08, 0.04, mat.steel, RIGHT_X - 0.07, 1.05, zb1 - 0.25);
+  // Kaca partisi shower
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.9, 0.62), new THREE.MeshStandardMaterial({ color: '#BFE3F2', transparent: true, opacity: 0.25, roughness: 0.05 }));
+  glass.position.set(shx - 0.31, 0.95, shz); scene.add(glass);
+  // Ember & gayung kecil
+  const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.12, 0.3, 18), M('#60A5FA', { roughness: 0.5 })); bucket.position.set(BATH_X + 0.35, 0.15, zb1 - 0.3); bucket.castShadow = true; scene.add(bucket);
+  label('🚿 Kamar mandi dalam', (BATH_X + RIGHT_X) / 2, 2.2, (zb0 + zb1) / 2, 'km', null, r.id);
+}
+function wifiRouter(r) {
+  // Router di dinding depan kamar 1 (sisi dalam), dekat pintu
+  const x = 3.3, y = 2.15, z = TERRACE_Z + T / 2 + 0.03;
+  const g = new THREE.Group(); g.position.set(x, y, z); scene.add(g);
+  const body = new THREE.Mesh(new RoundedBoxGeometry(0.3, 0.18, 0.05, 3, 0.015), mat.white); g.add(body);
+  [-0.11, 0.11].forEach((dx, i) => {
+    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.22, 10), mat.dark);
+    ant.position.set(dx, 0.17, 0); ant.rotation.z = i ? -0.18 : 0.18; g.add(ant);
+  });
+  const leds = [0, 1, 2, 3].map((i) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.018, 0.01), new THREE.MeshStandardMaterial({ color: '#22D3EE', emissive: '#22D3EE', emissiveIntensity: 2 }));
+    m.position.set(-0.09 + i * 0.06, -0.04, 0.03); g.add(m); return m;
+  });
+  // Gelombang sinyal
+  const waves = [0, 1, 2].map((i) => {
+    const w = new THREE.Mesh(new THREE.TorusGeometry(0.16 + i * 0.13, 0.012, 6, 32, Math.PI * 0.6),
+      new THREE.MeshBasicMaterial({ color: '#06B6D4', transparent: true, opacity: 0.6 }));
+    w.rotation.z = Math.PI * 0.2; w.position.set(0, 0.12, 0.04); g.add(w); return w;
+  });
+  animated.push((t) => {
+    leds.forEach((l, i) => { l.material.emissiveIntensity = (Math.sin(t * 6 + i * 1.7) > 0.2) ? 2.4 : 0.3; });
+    waves.forEach((w, i) => { const p = ((t * 0.8 + i / 3) % 1); w.material.opacity = 0.75 * (1 - p); w.scale.setScalar(0.8 + p * 0.6); });
+  });
+  label('📶 WiFi 150 Mbps', x, y + 0.55, z + 0.2, 'wifi', null, r.id, true);
+}
+ROOMS.forEach((r) => { bed(r); ac(r); wardrobe(r); desk(r); lamp(r); bathroom(r); if (r.wifi) wifiRouter(r); });
+
+/* ════════════════ LORONG, TERAS, BELAKANG ════════════════ */
+// Lampu downlight lorong
+[3, 6, 9, 11.5].forEach((z) => {
+  const d = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.02, 18), new THREE.MeshStandardMaterial({ color: '#fff', emissive: '#FFF5DD', emissiveIntensity: 1.4 }));
+  d.position.set(1.3, H - 0.01, z); ceiling.add(d);
+});
+const corLight = new THREE.PointLight('#FFF3DC', 0, 10, 1.5); corLight.position.set(1.3, H - 0.4, 7); scene.add(corLight);
+// Meteran listrik di dinding lorong
+box(0.08, 0.32, 0.22, mat.white, COR_X - T / 2 - 0.04, 2.2, 1.9);
+box(0.01, 0.1, 0.12, mat.dark, COR_X - T / 2 - 0.085, 2.25, 1.9, { shadow: false });
+// Tiang bambu & balok teras (masih tahap renovasi di video)
+[[0.25, 0.15], [2.4, 0.15], [4.8, 0.15]].forEach(([x, z]) => {
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, H, 10), mat.bamboo); p.position.set(x, H / 2, z); p.castShadow = true; scene.add(p);
+  box(0.24, 0.3, 0.24, mat.brick, x, 0.15, z, { collide: true });
+});
+box(RIGHT_X, 0.16, 0.2, mat.wood, RIGHT_X / 2, H - 0.08, 0.15);
+// Tangga ke lantai atas (di belakang kiri, seperti di video)
+const steps = 14, sz0 = 12.3, sz1 = 15.9, sw = 1.0;
+for (let i = 0; i < steps; i++) {
+  const hgt = ((i + 1) / steps) * H, dz = (sz1 - sz0) / steps;
+  box(sw, hgt, dz, mat.concrete, sw / 2 + 0.02, hgt / 2, sz0 + dz * (i + 0.5));
+}
+colliders.push([0, sz0, sw + 0.05, sz1]);
+// Motor parkir
+function motorbike(x, z, rot) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
+  [-0.6, 0.6].forEach((dz) => { const w = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.07, 10, 24), mat.dark); w.rotation.y = Math.PI / 2; w.position.set(0, 0.31, dz); w.castShadow = true; g.add(w); });
+  box(0.3, 0.35, 1.1, M('#1F2937', { roughness: 0.4 }), 0, 0.55, 0, { parent: g });
+  box(0.28, 0.1, 0.6, M('#111827'), 0, 0.78, -0.2, { parent: g });
+  box(0.5, 0.05, 0.05, mat.steel, 0, 1.0, 0.55, { parent: g });
+  box(0.24, 0.24, 0.12, M('#DC2626', { roughness: 0.4 }), 0, 0.82, 0.58, { parent: g });
+  colliders.push([x - 0.35, z - 0.8, x + 0.35, z + 0.8]);
+}
+motorbike(2.2, 13.9, 0.15);
+motorbike(3.4, 14.3, -0.1);
+
+/* ── Label area ── */
+ROOMS.forEach((r) => {
+  r.labelObj = label(r.name, (COR_X + BATH_X) / 2, 2.9, (r.z0 + r.z1) / 2 - 0.3, 'room area', `${r.tag} · ±3,5 × 4,2 m`);
+});
+label('Lorong', 1.3, 0.4, 7.5, 'area dim');
+label('Teras depan', 1.1, 0.4, 0.25, 'area dim');
+label('Tangga ke atas', 0.6, 3.3, 14.1, 'area dim');
+label('Parkir motor', 3.4, 1.4, 14.4, 'area dim');
+label('Roster', -0.2, 2.8, 4.1, 'area dim');
+
+/* ════════════════ NAVIGASI ════════════════ */
+const ui = {
+  info: document.getElementById('info'), infoTitle: document.getElementById('infoTitle'), infoEyebrow: document.getElementById('infoEyebrow'),
+  infoSize: document.getElementById('infoSize'), infoList: document.getElementById('infoList'), infoActions: document.getElementById('infoActions'),
+  hud: document.getElementById('walkHud'), roomList: document.getElementById('roomList'),
+};
+ROOMS.forEach((r) => {
+  const b = document.createElement('button');
+  b.className = 'room-btn'; b.dataset.room = r.id;
+  b.innerHTML = `<span class="room-num">${r.id}</span><span><b>${r.name}</b><small>${r.tag}${r.wifi ? ' · ada router WiFi' : ''}</small></span>`;
+  b.addEventListener('click', () => enterRoom(r.id));
+  ui.roomList.appendChild(b);
+});
+
+let mode = 'orbit';               // 'orbit' | 'top' | 'walk'
+let tween = null;
+const walk = { yaw: 0, pitch: 0, pos: new THREE.Vector3(), keys: {}, speed: 1.8 };
+const EYE = 1.6, RADIUS = 0.22;
+
+function setActiveView(v) {
+  document.querySelectorAll('.view-btn').forEach((b) => b.classList.toggle('active', b.dataset.view === v));
+}
+function setActiveRoom(id) {
+  document.querySelectorAll('.room-btn').forEach((b) => b.classList.toggle('active', Number(b.dataset.room) === id));
+}
+function flyTo(pos, target, ms = 900, done) {
+  const p0 = camera.position.clone(), t0 = controls.target.clone(), start = performance.now();
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) ms = 1;
+  tween = (now) => {
+    const k = Math.min(1, (now - start) / ms), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    camera.position.lerpVectors(p0, pos, e);
+    controls.target.lerpVectors(t0, target, e);
+    camera.lookAt(controls.target);
+    if (k >= 1) { tween = null; done && done(); }
+  };
+}
+function setInteriorLights(on) {
+  ROOMS.forEach((r) => { r.light.intensity = on ? 5 : 0; });
+  corLight.intensity = on ? 4 : 0;
+}
+
+function showOrbit() {
+  exitWalk();
+  mode = 'orbit'; setActiveView('orbit'); setActiveRoom(null); hideInfo();
+  controls.enabled = true; controls.enableRotate = true;
+  flyTo(new THREE.Vector3(-7.5, 11.5, -6.5), new THREE.Vector3(3.4, 0, 8));
+}
+function showTop() {
+  exitWalk();
+  mode = 'top'; setActiveView('top'); setActiveRoom(null); hideInfo();
+  controls.enabled = true;
+  flyTo(new THREE.Vector3(3.4, 24, 8.01), new THREE.Vector3(3.4, 0, 8));
+}
+function setFov(f) { camera.fov = f; camera.updateProjectionMatrix(); }
+function startWalk(pos, yaw, pitch = -0.05) {
+  mode = 'walk';
+  setFov(72);
+  controls.enabled = false;
+  document.body.classList.add('walking');
+  ui.hud.classList.add('show');
+  ceiling.visible = true; setInteriorLights(true);
+  const target = new THREE.Vector3(pos.x + Math.sin(yaw) * Math.cos(pitch), EYE + Math.sin(pitch), pos.z + Math.cos(yaw) * Math.cos(pitch));
+  flyTo(new THREE.Vector3(pos.x, EYE, pos.z), target, 1000, () => {
+    walk.pos.set(pos.x, EYE, pos.z); walk.yaw = yaw; walk.pitch = pitch;
+  });
+  walk.pos.set(pos.x, EYE, pos.z); walk.yaw = yaw; walk.pitch = pitch;
+}
+function exitWalk() {
+  if (mode !== 'walk') return;
+  setFov(55);
+  document.body.classList.remove('walking');
+  ui.hud.classList.remove('show');
+  ceiling.visible = roofToggle; setInteriorLights(false);
+  controls.target.set(walk.pos.x + Math.sin(walk.yaw), 1, walk.pos.z + Math.cos(walk.yaw));
+}
+function enterRoom(id) {
+  const r = ROOMS.find((x) => x.id === id);
+  setActiveView(null); setActiveRoom(id);
+  // Berdiri di dalam kamar dekat pintu, menghadap kasur & AC
+  const p = new THREE.Vector3(COR_X + 0.75, EYE, r.z0 + 1.9);
+  startWalk(p, Math.atan2(5.6 - p.x, r.z0 + 0.8 - p.z), -0.12);
+  showInfo(r);
+}
+function enterBath(id) {
+  const r = ROOMS.find((x) => x.id === id);
+  // Berdiri tepat di dalam pintu kamar mandi, menghadap pojok shower & kloset
+  const p = new THREE.Vector3(BATH_X + 0.2, EYE, r.bath.z0 + 0.62);
+  startWalk(p, Math.atan2(RIGHT_X - 0.5 - p.x, r.bath.z1 - 0.55 - p.z), -0.5);
+  showInfo(r, true);
+}
+function walkCorridor() {
+  setActiveView('corridor'); setActiveRoom(null); hideInfo();
+  startWalk(new THREE.Vector3(1.3, EYE, 0.6), 0, -0.02);
+}
+
+let infoRoom = null;
+function showInfo(r, inBath) {
+  infoRoom = r.id;
+  ui.infoEyebrow.textContent = inBath ? 'Kamar mandi dalam' : `Kamar ${r.tag.toLowerCase()}`;
+  ui.infoTitle.textContent = r.name;
+  ui.infoSize.textContent = inBath ? `${r.name} · ±1,6 × 1,7 m` : 'Ukuran ±3,5 × 4,2 m (perkiraan) · termasuk kamar mandi';
+  const items = inBath
+    ? [['🚽', 'Kloset duduk'], ['🚿', 'Shower dengan partisi kaca'], ['🪞', 'Wastafel & cermin'], ['🪣', 'Ember untuk cadangan air']]
+    : [['🛏️', 'Kasur 120 × 200 + 2 bantal & guling'], ['❄️', 'AC split di atas kasur'], ['🚿', 'Kamar mandi dalam'], ['🗄️', 'Lemari pakaian'], ['💻', 'Meja belajar & kursi'],
+       r.wifi ? ['📶', 'Router WiFi 150 Mbps di dinding kamar ini'] : ['📶', 'WiFi 150 Mbps (router di Kamar 1)']];
+  ui.infoList.innerHTML = items.map(([i, t]) => `<li><span>${i}</span><span>${t}</span></li>`).join('');
+  ui.infoActions.innerHTML = '';
+  const add = (txt, fn) => { const b = document.createElement('button'); b.className = 'chip-btn'; b.textContent = txt; b.onclick = fn; ui.infoActions.appendChild(b); };
+  if (inBath) add('← Kembali ke kamar', () => enterRoom(r.id)); else add('🚿 Lihat kamar mandi', () => enterBath(r.id));
+  if (r.id < 3) add(`Kamar ${r.id + 1} →`, () => enterRoom(r.id + 1));
+  ui.info.classList.add('show');
+}
+function hideInfo() { infoRoom = null; ui.info.classList.remove('show'); }
+
+/* ── Kontrol jalan: geser untuk melihat, WASD/panah untuk bergerak ── */
+let drag = null;
+renderer.domElement.addEventListener('pointerdown', (e) => {
+  if (mode !== 'walk') return;
+  drag = { x: e.clientX, y: e.clientY, yaw: walk.yaw, pitch: walk.pitch, id: e.pointerId, moved: false };
+  renderer.domElement.setPointerCapture(e.pointerId);
+});
+renderer.domElement.addEventListener('pointermove', (e) => {
+  if (!drag || e.pointerId !== drag.id || tween) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+  walk.yaw = drag.yaw - dx * 0.005;
+  walk.pitch = THREE.MathUtils.clamp(drag.pitch - dy * 0.004, -1.1, 1.0);
+});
+renderer.domElement.addEventListener('pointerup', () => { drag = null; });
+const KEYMAP = { KeyW: 'f', ArrowUp: 'f', KeyS: 'b', ArrowDown: 'b', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
+addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && mode === 'walk') { showOrbit(); return; }
+  const k = KEYMAP[e.code];
+  if (!k || mode !== 'walk') return;
+  walk.keys[k] = true; e.preventDefault();
+});
+addEventListener('keyup', (e) => { const k = KEYMAP[e.code]; if (k) walk.keys[k] = false; });
+document.querySelectorAll('#pad button').forEach((b) => {
+  const on = (e) => { e.preventDefault(); walk.keys[b.dataset.k] = true; b.classList.add('on'); };
+  const off = () => { walk.keys[b.dataset.k] = false; b.classList.remove('on'); };
+  b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off); b.addEventListener('pointercancel', off);
+});
+
+function blocked(x, z) {
+  if (x < 0.05 || x > RIGHT_X - 0.05 || z < -0.5 || z > BACK_Z - 0.05) return true;
+  return colliders.some(([x0, z0, x1, z1]) => x > x0 - RADIUS && x < x1 + RADIUS && z > z0 - RADIUS && z < z1 + RADIUS);
+}
+function roomOf(x, z) { const r = ROOMS.find((q) => x > COR_X && z > q.z0 && z < q.z1); return r ? r.id : null; }
+function updateLabels() {
+  const cur = mode === 'walk' ? roomOf(walk.pos.x, walk.pos.z) : null;
+  labels.forEach((o) => {
+    const u = o.userData;
+    o.visible = u.area ? mode !== 'walk' : (mode === 'walk' ? u.room === cur : u.always);
+  });
+}
+function stepWalk(dt) {
+  const f = (walk.keys.f ? 1 : 0) - (walk.keys.b ? 1 : 0), s = (walk.keys.r ? 1 : 0) - (walk.keys.l ? 1 : 0);
+  if (f || s) {
+    const sin = Math.sin(walk.yaw), cos = Math.cos(walk.yaw);
+    let dx = (sin * f - cos * s), dz = (cos * f + sin * s);
+    const len = Math.hypot(dx, dz) || 1; dx = dx / len * walk.speed * dt; dz = dz / len * walk.speed * dt;
+    if (!blocked(walk.pos.x + dx, walk.pos.z)) walk.pos.x += dx;   // geser per sumbu supaya bisa "menyusur" dinding
+    if (!blocked(walk.pos.x, walk.pos.z + dz)) walk.pos.z += dz;
+  }
+  camera.position.copy(walk.pos);
+  camera.lookAt(walk.pos.x + Math.sin(walk.yaw) * Math.cos(walk.pitch), EYE + Math.sin(walk.pitch), walk.pos.z + Math.cos(walk.yaw) * Math.cos(walk.pitch));
+  // Kartu info mengikuti kamar tempat pengunjung berdiri
+  const here = ROOMS.find((r) => walk.pos.x > COR_X && walk.pos.z > r.z0 && walk.pos.z < r.z1);
+  if (here && here.id !== infoRoom) { showInfo(here); setActiveRoom(here.id); }
+  else if (!here && infoRoom && !tween) { hideInfo(); setActiveRoom(null); }
+}
+
+/* ── Klik kamar di tampilan 3D/atas untuk masuk ── */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let downAt = null;
+renderer.domElement.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', (e) => {
+  if (mode === 'walk' || !downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6) return;
+  ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hit = ray.intersectObjects(scene.children, true).find((h) => h.object.userData.room || roomAt(h.point));
+  const id = hit && (hit.object.userData.room || roomAt(hit.point));
+  if (id) enterRoom(id);
+});
+function roomAt(p) {
+  const r = ROOMS.find((x) => p.x > COR_X && p.x < RIGHT_X && p.z > x.z0 && p.z < x.z1);
+  return r ? r.id : null;
+}
+
+/* ── Tombol UI ── */
+document.querySelectorAll('.view-btn').forEach((b) => b.addEventListener('click', () => {
+  ({ top: showTop, orbit: showOrbit, corridor: walkCorridor })[b.dataset.view]();
+}));
+document.getElementById('walkExit').addEventListener('click', showOrbit);
+const btnLabels = document.getElementById('btnLabels');
+btnLabels.addEventListener('click', () => {
+  const on = btnLabels.getAttribute('aria-pressed') !== 'true';
+  btnLabels.setAttribute('aria-pressed', on); document.body.classList.toggle('no-labels', !on);
+});
+let roofToggle = false;
+const btnRoof = document.getElementById('btnRoof');
+btnRoof.addEventListener('click', () => {
+  roofToggle = !roofToggle; btnRoof.setAttribute('aria-pressed', roofToggle);
+  if (mode !== 'walk') ceiling.visible = roofToggle;
+});
+if (isTouch) document.getElementById('walkTip').textContent = 'Geser layar untuk melihat · tombol panah untuk jalan';
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight); labelRenderer.setSize(innerWidth, innerHeight);
+});
+
+/* ── Mulai ── */
+camera.position.set(-12, 20, -14);
+controls.update();
+showOrbit();
+const params = new URLSearchParams(location.search);
+const startRoom = Number(params.get('kamar'));
+if (startRoom >= 1 && startRoom <= 3) setTimeout(() => enterRoom(startRoom), 400);
+
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.12), t = clock.elapsedTime;
+  if (tween) tween(performance.now());
+  else if (mode === 'walk') stepWalk(dt);
+  else controls.update();
+  animated.forEach((fn) => fn(t));
+  updateLabels();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+});
+requestAnimationFrame(() => document.getElementById('loading').classList.add('hide'));
+window.__denah = { enterRoom, enterBath, showTop, showOrbit, walkCorridor, get mode() { return mode; }, walk, colliders, step: stepWalk, get info() { return infoRoom; }, project: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; } };
+</script>
+</body>
+</html>

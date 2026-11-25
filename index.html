@@ -1141,6 +1141,19 @@ footer      { background: #F8F6FF; }
 .social-btn:hover { background: var(--grad-soft); border-color: rgba(219,39,119,.35); }
 .footer-col ul li a:hover { color: var(--accent-2); }
 
+/* Kartu kamar hero: miring 3D mengikuti kursor */
+.hero-visual { transform: perspective(1100px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transform-style: preserve-3d; will-change: transform; }
+.hero-visual.tilt-reset { transition: transform .6s var(--ease-out); }
+.hero-visual .floating-tag { translate: 0 0 70px; }
+.hero-visual .room-card-main { transform-style: preserve-3d; position: relative; }
+.hero-visual .room-svg { transform: translate(var(--px, 0px), var(--py, 0px)) scale(1.06); transition: transform .15s linear; }
+.hero-visual .room-card-main::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 30%), rgba(255,255,255,.55), transparent 55%);
+  opacity: var(--glare, 0); transition: opacity .3s; mix-blend-mode: soft-light;
+}
+@media (prefers-reduced-motion: reduce) { .hero-visual { transform: none !important; } .hero-visual .room-svg { transform: none; } }
+
 /* Testimoni penghuni */
 .testi-card { display: flex; flex-direction: column; gap: 12px; }
 .testi-card .penghuni-quote { color: var(--text); font-size: .9rem; flex: 1; }
@@ -1173,7 +1186,6 @@ footer      { background: #F8F6FF; }
     <li><a href="#lokasi">Lokasi</a></li>
     <li><a href="#testimoni">Testimoni</a></li>
     <li><a href="#harga">Harga</a></li>
-    <li><a href="denah.html">Denah 3D</a></li>
   </ul>
   <div class="nav-right">
     <div class="nav-clock" id="navClock" aria-label="Jam saat ini">
@@ -1194,7 +1206,6 @@ footer      { background: #F8F6FF; }
   <a href="#lokasi" class="mobile-link">Lokasi</a>
   <a href="#testimoni" class="mobile-link">Testimoni</a>
   <a href="#harga" class="mobile-link">Harga</a>
-  <a href="denah.html" class="mobile-link">Denah 3D</a>
   <a href="/penghuni/login" class="mobile-link" style="font-size: clamp(1.1rem, 4vw, 1.3rem);">🔑 Login Penghuni</a>
   <a href="https://wa.link/v5vckc" target="_blank" rel="noopener" class="btn-wa">💬 Hubungi Kami</a>
 </div>
@@ -2327,6 +2338,38 @@ footer      { background: #F8F6FF; }
     } catch {
       // Gagal cek admin nggak boleh nge-break landing page buat pengunjung biasa.
     }
+  })();
+</script>
+<script>
+  /* Kartu kamar di hero: efek 3D mengikuti kursor */
+  (function () {
+    const hero = document.getElementById('hero');
+    const vis = hero && hero.querySelector('.hero-visual');
+    if (!vis || matchMedia('(prefers-reduced-motion: reduce)').matches || matchMedia('(pointer: coarse)').matches) return;
+    let target = { x: 0, y: 0 }, cur = { x: 0, y: 0 }, raf = null, active = false;
+    const MAX_X = 10, MAX_Y = 16;
+    function frame() {
+      cur.x += (target.x - cur.x) * 0.12; cur.y += (target.y - cur.y) * 0.12;
+      vis.style.setProperty('--rx', (-cur.y * MAX_X).toFixed(2) + 'deg');
+      vis.style.setProperty('--ry', (cur.x * MAX_Y).toFixed(2) + 'deg');
+      vis.style.setProperty('--px', (cur.x * -10).toFixed(1) + 'px');
+      vis.style.setProperty('--py', (cur.y * -8).toFixed(1) + 'px');
+      vis.style.setProperty('--gx', (50 + cur.x * 40).toFixed(1) + '%');
+      vis.style.setProperty('--gy', (40 + cur.y * 40).toFixed(1) + '%');
+      if (active || Math.abs(target.x - cur.x) + Math.abs(target.y - cur.y) > 0.002) raf = requestAnimationFrame(frame);
+      else raf = null;
+    }
+    hero.addEventListener('pointermove', (e) => {
+      const r = vis.getBoundingClientRect();
+      target.x = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width * 0.75)));
+      target.y = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height * 0.75)));
+      active = true; vis.classList.remove('tilt-reset'); vis.style.setProperty('--glare', 1);
+      if (!raf) raf = requestAnimationFrame(frame);
+    });
+    hero.addEventListener('pointerleave', () => {
+      active = false; target = { x: 0, y: 0 }; vis.style.setProperty('--glare', 0);
+      if (!raf) raf = requestAnimationFrame(frame);
+    });
   })();
 </script>
 <script src="ai-kost.js" defer></script>

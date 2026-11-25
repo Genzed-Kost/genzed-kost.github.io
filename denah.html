@@ -148,7 +148,6 @@ button { font: inherit; color: inherit; }
   <a class="back" href="index.html">← Beranda</a>
   <div class="title">
     <h1>Denah 3D <span>Genzed Kost</span></h1>
-    <p>Dibuat dari video bangunan · kamar 3 × 4 m, kamar mandi 1,5 × 2 m</p>
   </div>
   <div class="top-actions">
     <button class="chip-btn" id="btnLabels" aria-pressed="true">Label</button>
@@ -171,9 +170,9 @@ button { font: inherit; color: inherit; }
   </div>
   <div class="legend">
     <span><i style="background:#F3EEFF;border:1px solid #CFC4EE"></i>Kamar</span>
-    <span><i style="background:#E3F8F2;border:1px solid #9ADFCB"></i>Kamar mandi</span>
-    <span><i style="background:#FFF7E0;border:1px solid #F5D77A"></i>Lorong</span>
-    <span><i style="background:#EEE8E2;border:1px solid #CDBFB2"></i>Parkir & tangga</span>
+    <span><i style="background:#CFE6CF;border:1px solid #7FB27F"></i>Kamar mandi</span>
+    <span><i style="background:#C9CDD4;border:1px solid #9CA3AF"></i>Lorong</span>
+    <span><i style="background:#B9BEC6;border:1px solid #8B929C"></i>Area belakang & tangga</span>
   </div>
   <p class="hint">Klik kamar di gambar untuk masuk. Di dalam: geser layar untuk melihat sekeliling, jalan dengan W A S D / tombol panah.</p>
 </aside>
@@ -212,14 +211,14 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 const H = 3.0, T = 0.15;            // tinggi plafon, tebal dinding
 const COR_X = 2.6;                  // lorong: x 0..2.6 ; kamar: x 2.6..6.8
 const RIGHT_X = 6.6;                // kamar 3 m (sepanjang lorong) × 4 m (x 2.6..6.6)
-const TERRACE_Z = 1.5;              // teras depan z 0..1.5
+const TERRACE_Z = 0;                // garis fasad depan (pagar geser di depan lorong)
 const ROOMS = [
-  { id: 1, name: 'Kamar 1', tag: 'Depan', z0: 1.5, z1: 4.5, wifi: true },
-  { id: 2, name: 'Kamar 2', tag: 'Tengah', z0: 4.5, z1: 7.5 },
-  { id: 3, name: 'Kamar 3', tag: 'Belakang', z0: 7.5, z1: 10.5 },
+  { id: 1, name: 'Kamar 1', tag: 'Depan', z0: 0, z1: 3, wifi: true },
+  { id: 2, name: 'Kamar 2', tag: 'Tengah', z0: 3, z1: 6 },
+  { id: 3, name: 'Kamar 3', tag: 'Belakang', z0: 6, z1: 9 },
 ];
-const COR_END = 10.5;               // ujung deretan kamar
-const BACK_Z = 14.5;                // area belakang (parkir + tangga) z 10.5..14.5
+const COR_END = 9;                  // ujung deretan kamar
+const BACK_Z = 13;                  // area belakang (tangga, jemuran) z 9..13
 const BATH_X = 4.6;                 // kamar mandi 2 × 1,5 m di pojok belakang kamar: x 4.6..6.6
 const BATH_D = 1.5;                 // … dan 1,5 m terakhir tiap kamar (sepanjang lorong)
 
@@ -258,7 +257,7 @@ controls.enableDamping = true;
 controls.maxPolarAngle = Math.PI * 0.49;
 controls.minDistance = 4;
 controls.maxDistance = 45;
-controls.target.set(3.3, 0, 7.25);
+controls.target.set(3.3, 0, 6.5);
 
 /* ── Cahaya ── */
 scene.add(new THREE.HemisphereLight('#FFFFFF', '#D9CFC2', 1.25));
@@ -268,7 +267,7 @@ sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 50 });
 sun.shadow.bias = -0.0004;
-sun.target.position.set(3.3, 0, 7.25);
+sun.target.position.set(3.3, 0, 6.5);
 scene.add(sun, sun.target);
 
 /* ── Tekstur buatan (canvas) ── */
@@ -312,6 +311,60 @@ const doorTex = canvasTex(128, 320, (g, w, h) => {
   for (let i = 0; i < 18; i++) { g.strokeStyle = `rgba(60,30,10,${Math.random() * 0.12})`; g.lineWidth = 1; g.beginPath(); const x = Math.random() * w; g.moveTo(x, 0); g.lineTo(x + Math.random() * 6, h); g.stroke(); }
 });
 
+const grayTileTex = (sx, sz, base = '#A3A8B0', tile = 0.4) => canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = base; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 260; i++) { g.fillStyle = `rgba(${Math.random() < .5 ? '60,64,72' : '220,224,230'},${Math.random() * 0.18})`; g.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 4, 2 + Math.random() * 4); }
+  g.strokeStyle = '#7E848D'; g.lineWidth = 4; g.strokeRect(0, 0, w, h);
+}, [sx / tile, sz / tile]);
+const backTex = (sx, sz) => canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#9CA1A9'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#6F757E'; g.lineWidth = 6;
+  for (let i = 0; i < 4; i++) { g.beginPath(); g.arc(w / 2, h / 2, 26 + i * 26, 0, 7); g.stroke(); }
+  g.strokeStyle = '#7E848D'; g.lineWidth = 4; g.strokeRect(0, 0, w, h);
+}, [sx / 0.4, sz / 0.4]);
+const marbleTex = (sx, sz) => canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#F4F4F6'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = 'rgba(150,152,165,.35)'; g.lineWidth = 1.5;
+  for (let i = 0; i < 6; i++) { g.beginPath(); let x = Math.random() * w, y = 0; g.moveTo(x, y); while (y < h) { x += (Math.random() - .5) * 40; y += 20 + Math.random() * 20; g.lineTo(x, y); } g.stroke(); }
+  g.strokeStyle = '#D6D7DD'; g.lineWidth = 3; g.strokeRect(0, 0, w, h);
+}, [sx / 0.6, sz / 0.6]);
+const greenTileTex = (sx, sz) => canvasTex(128, 128, (g, w, h) => {
+  g.fillStyle = '#E9F1E4'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#6FA36F';
+  g.beginPath(); g.moveTo(w / 2, 10); g.lineTo(w - 10, h / 2); g.lineTo(w / 2, h - 10); g.lineTo(10, h / 2); g.closePath(); g.fill();
+  g.fillStyle = '#E9F1E4'; g.beginPath(); g.moveTo(w / 2, 30); g.lineTo(w - 30, h / 2); g.lineTo(w / 2, h - 30); g.lineTo(30, h / 2); g.closePath(); g.fill();
+  g.strokeStyle = '#B9CDB2'; g.lineWidth = 3; g.strokeRect(0, 0, w, h);
+}, [sx / 0.2, sz / 0.2]);
+// Keramik dinding kamar mandi bermotif mawar (seperti foto)
+const floralTex = canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = '#EEF0EE'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = 'rgba(60,60,70,.25)'; g.lineWidth = 1;
+  for (let i = -w; i < w * 2; i += 64) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + h, h); g.stroke(); g.beginPath(); g.moveTo(i, h); g.lineTo(i + h, 0); g.stroke(); }
+  const cols = ['#E8793A', '#E26D7A', '#8E86C8'];
+  for (let k = 0; k < 7; k++) {
+    const x = 36 + k * 72;
+    g.strokeStyle = '#4E5B4A'; g.lineWidth = 2; g.beginPath(); g.moveTo(x, 0);
+    for (let y = 0; y <= h; y += 16) g.lineTo(x + Math.sin(y / 30 + k) * 10, y);
+    g.stroke();
+    for (let y = 20 + (k % 2) * 50; y < h; y += 100) {
+      g.fillStyle = '#7D9A6E'; g.beginPath(); g.ellipse(x + 14, y + 22, 10, 5, 0.6, 0, 7); g.fill();
+      g.fillStyle = cols[(k + y) % 3]; g.beginPath(); g.arc(x, y, 15, 0, 7); g.fill();
+      g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 8, 0, 5); g.stroke();
+    }
+  }
+}, [3, 3]);
+const gateTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#A65A2E'; g.fillRect(0, 0, w, h);
+  for (let y = 0; y < h; y += 32) { g.fillStyle = '#C98A55'; g.fillRect(0, y, w, 3); g.fillStyle = 'rgba(80,35,10,.25)'; g.fillRect(0, y + 3, w, 2); }
+  for (let i = 0; i < 40; i++) { g.strokeStyle = `rgba(70,30,10,${Math.random() * .15})`; g.beginPath(); const y = Math.random() * h; g.moveTo(0, y); g.bezierCurveTo(w / 3, y + 6, w / 2, y - 6, w, y); g.stroke(); }
+}, [2, 1]);
+const glassBlockTex = (sx, sy) => canvasTex(128, 128, (g, w, h) => {
+  g.fillStyle = 'rgba(248,250,252,.92)'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#D6DBE1'; g.lineWidth = 8; g.strokeRect(0, 0, w, h);
+  g.globalCompositeOperation = 'destination-out';
+  g.beginPath(); g.ellipse(w / 2, h / 2, 26, 40, 0, 0, 7); g.fill();
+}, [sx / 0.2, sy / 0.2]);
+
 /* ── Material ── */
 const M = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0, ...o });
 const mat = {
@@ -323,13 +376,14 @@ const mat = {
   ground: M('#D8CDBE', { roughness: 1 }), brick: M('#B5654A'), concrete: M('#B9B6B2', { roughness: 0.95 }),
   mirror: M('#E4EEF7', { roughness: 0.08, metalness: 0.2 }), mint: M('#CDEEE5'),
 };
-mat.bathWall = new THREE.MeshStandardMaterial({ map: tileTex(1.2, 1.2, '#D7EFE8', '#A9CFC3', 0.3), roughness: 0.3 });
+mat.bathWall = new THREE.MeshStandardMaterial({ map: floralTex, roughness: 0.35 });
 const floorMat = (x0, z0, x1, z1, kind) => {
   const sx = x1 - x0, sz = z1 - z0;
-  const map = kind === 'bath' ? tileTex(sx, sz, '#E1F4EE', '#B2D6CB', 0.3)
-    : kind === 'pattern' ? patternTex(sx, sz)
-    : kind === 'terrace' ? tileTex(sx, sz, '#E9E4DC', '#CFC6B8', 0.4)
-    : tileTex(sx, sz, kind === 'room' ? '#F6F2FF' : '#FFF9E8', '#DCD7E6');
+  const map = kind === 'bath' ? greenTileTex(sx, sz)
+    : kind === 'pattern' ? backTex(sx, sz)
+    : kind === 'corridor' ? grayTileTex(sx, sz)
+    : kind === 'strip' ? tileTex(sx, sz, '#FAFAFB', '#DADCE2', 0.4)
+    : marbleTex(sx, sz);
   return new THREE.MeshStandardMaterial({ map, roughness: 0.35 });
 };
 
@@ -344,7 +398,7 @@ function box(w, h, d, m, x, y, z, { shadow = true, collide = false, parent = sce
   return mesh;
 }
 // Dinding lurus dengan lubang (pintu/jendela/ventilasi). axis 'z' = dinding di garis x tetap.
-function wall(axis, fixed, from, to, holes = [], m = mat.wall) {
+function wall(axis, fixed, from, to, holes = [], m = mat.wall, t = T, top = H, solidCollide = true) {
   const cuts = new Set([from, to]);
   holes.forEach((h) => { cuts.add(Math.max(from, h.a)); cuts.add(Math.min(to, h.b)); });
   const xs = [...cuts].sort((a, b) => a - b);
@@ -355,12 +409,12 @@ function wall(axis, fixed, from, to, holes = [], m = mat.wall) {
     let y = 0;
     const solids = [];
     covering.forEach((h) => { if (h.y0 > y) solids.push([y, h.y0]); y = Math.max(y, h.y1); });
-    if (y < H) solids.push([y, H]);
+    if (y < top) solids.push([y, top]);
     solids.forEach(([y0, y1]) => {
       const len = b - a, mid = (a + b) / 2, hh = y1 - y0, cy = (y0 + y1) / 2;
-      const collide = y0 < 1.7;
-      if (axis === 'z') box(T, hh, len, m, fixed, cy, mid, { collide });
-      else box(len, hh, T, m, mid, cy, fixed, { collide });
+      const collide = solidCollide && y0 < 1.7;
+      if (axis === 'z') box(t, hh, len, m, fixed, cy, mid, { collide, shadow: t > 0.05 });
+      else box(len, hh, t, m, mid, cy, fixed, { collide, shadow: t > 0.05 });
     });
   }
 }
@@ -389,10 +443,11 @@ function label(text, x, y, z, cls = '', small, room = null, always = false) {
 /* ════════════════ BANGUNAN ════════════════ */
 // Tanah & lantai
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), mat.ground);
-ground.rotation.x = -Math.PI / 2; ground.position.set(3.3, -0.06, 7.25); ground.receiveShadow = true; scene.add(ground);
+ground.rotation.x = -Math.PI / 2; ground.position.set(3.3, -0.06, 6.5); ground.receiveShadow = true; scene.add(ground);
 box(RIGHT_X + 0.3, 0.06, BACK_Z + 0.3, mat.concrete, RIGHT_X / 2, -0.03, BACK_Z / 2, { shadow: false });
-floor(0, 0, RIGHT_X, TERRACE_Z, 'terrace');
-floor(0, TERRACE_Z, COR_X, COR_END, 'corridor');
+floor(0, TERRACE_Z, COR_X - 0.9, COR_END, 'corridor');
+// Jalur keramik putih (sedikit lebih tinggi) di depan pintu-pintu kamar, seperti di foto
+box(0.9, 0.05, COR_END - TERRACE_Z, new THREE.MeshStandardMaterial({ map: tileTex(0.9, COR_END, '#FAFAFB', '#DADCE2', 0.4), roughness: 0.3 }), COR_X - 0.45, 0.025, (TERRACE_Z + COR_END) / 2, { shadow: false });
 floor(0, COR_END, RIGHT_X, BACK_Z, 'pattern');
 const roomFloors = [];
 ROOMS.forEach((r) => {
@@ -401,21 +456,21 @@ ROOMS.forEach((r) => {
   const fb = floor(BATH_X, r.z1 - BATH_D, RIGHT_X, r.z1, 'bath', -0.02); fb.userData.room = r.id; roomFloors.push(fb);
 });
 
-// Dinding kiri (lorong) dengan 2 panel roster
-const rosterHoles = [{ a: 2.3, b: 5.0, y0: 0.9, y1: 2.5 }, { a: 6.2, b: 8.9, y0: 0.9, y1: 2.5 }];
+// Dinding kiri (lorong) dengan panel roster kaca putih (seperti di foto)
+const rosterHoles = [{ a: 4.8, b: 8.4, y0: 0.9, y1: 2.6 }];
 wall('z', -T / 2, 0, BACK_Z, rosterHoles, mat.wallOut);
 rosterHoles.forEach((h) => {
   const w = h.b - h.a, hh = h.y1 - h.y0;
-  const rm = new THREE.MeshStandardMaterial({ map: rosterTex(w, hh), transparent: true, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.9 });
+  const rm = new THREE.MeshStandardMaterial({ map: glassBlockTex(w, hh), transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.2 });
   const p = new THREE.Mesh(new THREE.BoxGeometry(T * 0.8, hh, w), rm);
-  p.position.set(-T / 2, (h.y0 + h.y1) / 2, (h.a + h.b) / 2); p.castShadow = true;
+  p.position.set(-T / 2, (h.y0 + h.y1) / 2, (h.a + h.b) / 2);
   scene.add(p);
 });
 // Dinding kanan & belakang
 wall('z', RIGHT_X + T / 2, TERRACE_Z, BACK_Z, [], mat.wallOut);
 wall('x', BACK_Z + T / 2, -T, RIGHT_X + T, [], mat.wallOut);
-// Dinding depan kamar 1 (menghadap teras) dengan jendela
-wall('x', TERRACE_Z, COR_X, RIGHT_X, [{ a: 4.3, b: 5.5, y0: 1.0, y1: 2.2 }]);
+// Fasad depan (dinding depan kamar 1)
+wall('x', TERRACE_Z, COR_X, RIGHT_X, [], mat.wallOut);
 // Dinding pembatas lorong ↔ kamar: pintu, jendela tinggi, 3 ventilasi per kamar (seperti di video)
 const corHoles = [];
 ROOMS.forEach((r) => {
@@ -463,63 +518,59 @@ ROOMS.forEach((r) => {
     box(0.02, h.y1 - h.y0, h.b - h.a, mat.dark, COR_X + 0.03, (h.y0 + h.y1) / 2, (h.a + h.b) / 2, { shadow: false });
   });
 });
-// Jendela depan kamar 1
-box(1.2, 1.2, 0.03, mat.glass, 4.9, 1.6, TERRACE_Z, { shadow: false });
-[[4.3, 5.5]].forEach(() => {
-  box(1.32, 0.06, T + 0.04, frameMat, 4.9, 2.23, TERRACE_Z, { shadow: false });
-  box(1.32, 0.06, T + 0.04, frameMat, 4.9, 0.97, TERRACE_Z, { shadow: false });
-  box(0.06, 1.2, T + 0.04, frameMat, 4.27, 1.6, TERRACE_Z, { shadow: false });
-  box(0.06, 1.2, T + 0.04, frameMat, 5.53, 1.6, TERRACE_Z, { shadow: false });
-  box(0.04, 1.2, T + 0.04, frameMat, 4.9, 1.6, TERRACE_Z, { shadow: false });
-});
+// Pagar geser bermotif kayu di depan lorong + plakat logo Genzed Kost (seperti di foto)
+const gateMat = new THREE.MeshStandardMaterial({ map: gateTex, roughness: 0.45, metalness: 0.2 });
+box(COR_X - 0.1, 1.75, 0.05, gateMat, COR_X / 2, 0.9, -0.12, { collide: true });
+box(COR_X, 0.05, 0.06, M('#7A3E1C'), COR_X / 2, 1.8, -0.12);
+[0.03, COR_X - 0.03].forEach((x) => box(0.05, 1.8, 0.06, M('#7A3E1C'), x, 0.9, -0.12));
+box(COR_X + 0.15, H - 2.3, T, mat.wallOut, COR_X / 2 - 0.05, 2.3 + (H - 2.3) / 2, -T / 2);
+const logoTex = new THREE.TextureLoader().load('logo.png'); logoTex.colorSpace = THREE.SRGBColorSpace;
+const plaque = new THREE.Mesh(new THREE.CircleGeometry(0.28, 40), new THREE.MeshStandardMaterial({ map: logoTex, roughness: 0.5 }));
+plaque.position.set(3.25, 2.25, -T / 2 - 0.012); plaque.rotation.y = Math.PI; scene.add(plaque);
+const plaqueRim = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.02, 8, 40), M('#3B2A20')); plaqueRim.position.copy(plaque.position); scene.add(plaqueRim);
 
 /* ════════════════ ISI KAMAR ════════════════ */
 const animated = [];
 function bed(r) {
-  const zc = r.z0 + 0.75, x1 = RIGHT_X - 0.05, len = 2.0, x0 = x1 - len, w = 1.2, xc = (x0 + x1) / 2;
-  box(len, 0.28, w, mat.wood, xc, 0.14, zc, { collide: true });
-  box(len - 0.04, 0.24, w - 0.04, mat.mattress, xc, 0.4, zc);
-  box(0.08, 1.0, w + 0.04, mat.woodDark, x1 - 0.04, 0.5, zc);
-  // Seprai
-  box(len - 0.5, 0.03, w - 0.02, mat.sheet, xc - 0.22, 0.535, zc);
-  box(0.32, 0.06, w + 0.02, mat.sheet2, x0 + 0.3, 0.55, zc);
-  // Bantal (2) dan guling
-  const pillowGeo = new RoundedBoxGeometry(0.42, 0.13, 0.5, 4, 0.06);
-  [-0.27, 0.27].forEach((dz) => {
-    const p = new THREE.Mesh(pillowGeo, mat.pillow); p.position.set(x1 - 0.33, 0.6, zc + dz); p.rotation.z = 0.12; p.castShadow = true; scene.add(p);
+  // Kasur busa langsung di lantai (tanpa dipan), menempel dinding depan kamar
+  const w = 0.9, len = 2.0, x0 = BATH_X - 0.05, x1 = x0 + len, xc = (x0 + x1) / 2, zc = r.z0 + 0.08 + w / 2;
+  const top = canvasTex(256, 128, (g, cw, ch) => {
+    g.fillStyle = '#F3F4F6'; g.fillRect(0, 0, cw, ch);
+    g.strokeStyle = '#9CA3AF'; g.lineWidth = 3;
+    for (let k = 0; k < 3; k++) for (let i = 1; i < 6; i++) { g.beginPath(); g.arc(60 + k * 70, ch / 2, i * 9, 0, 7); g.stroke(); }
   });
-  const g = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.8, 6, 14), mat.bolster);
-  g.rotation.z = Math.PI / 2; g.position.set(xc + 0.1, 0.64, zc + w / 2 - 0.16); g.castShadow = true; scene.add(g);
-  [-0.25, 0, 0.25].forEach((dx) => {
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.101, 0.008, 6, 20), M('#F9A8D4'));
-    ring.rotation.y = Math.PI / 2; ring.position.set(xc + 0.1 + dx, 0.64, zc + w / 2 - 0.16); scene.add(ring);
-  });
-  label('Kasur · bantal · guling', xc - 0.2, 0.95, zc, 'dim', null, r.id);
+  const side = M('#6B7280', { roughness: 0.8 });
+  const mattress = new THREE.Mesh(new RoundedBoxGeometry(len, 0.2, w, 3, 0.03), [side, side, new THREE.MeshStandardMaterial({ map: top, roughness: 0.95 }), side, side, side]);
+  mattress.position.set(xc, 0.1, zc); mattress.castShadow = true; mattress.receiveShadow = true; scene.add(mattress);
+  colliders.push([x0, zc - w / 2, x1, zc + w / 2]);
+  box(0.36, 0.12, 0.16, M('#111827'), x1 - 0.2, 0.2, zc - w / 2 + 0.12, { shadow: false }); // label merek
+  // Bantal gelap & guling
+  const pillow = new THREE.Mesh(new RoundedBoxGeometry(0.4, 0.12, 0.6, 4, 0.05), M('#2F3542', { roughness: 0.95 }));
+  pillow.position.set(x0 + 0.28, 0.26, zc); pillow.rotation.z = -0.1; pillow.castShadow = true; scene.add(pillow);
+  const g = new THREE.Mesh(new THREE.CapsuleGeometry(0.09, 0.75, 6, 14), mat.bolster);
+  g.rotation.z = Math.PI / 2; g.position.set(xc + 0.1, 0.29, zc + w / 2 - 0.14); g.castShadow = true; scene.add(g);
+  label('Kasur busa · bantal · guling', xc, 0.65, zc, 'dim', null, r.id);
 }
 function ac(r) {
-  const x = RIGHT_X - 0.13, y = 2.5, z = r.z0 + 0.75;
-  const body = new THREE.Mesh(new RoundedBoxGeometry(0.22, 0.29, 0.88, 3, 0.04), mat.white);
+  // AC di dinding depan kamar, di atas kasur
+  const x = BATH_X + 0.95, y = 2.5, z = r.z0 + T / 2 + 0.12;
+  const body = new THREE.Mesh(new RoundedBoxGeometry(0.88, 0.29, 0.22, 3, 0.04), mat.white);
   body.position.set(x, y, z); body.castShadow = true; scene.add(body);
-  box(0.01, 0.04, 0.7, mat.dark, x - 0.112, y - 0.09, z, { shadow: false });
-  const led = box(0.01, 0.02, 0.02, new THREE.MeshStandardMaterial({ color: '#22C55E', emissive: '#22C55E', emissiveIntensity: 2 }), x - 0.112, y + 0.06, z + 0.34, { shadow: false });
+  box(0.7, 0.04, 0.01, mat.dark, x, y - 0.09, z + 0.112, { shadow: false });
+  const led = box(0.02, 0.02, 0.01, new THREE.MeshStandardMaterial({ color: '#22C55E', emissive: '#22C55E', emissiveIntensity: 2 }), x + 0.34, y + 0.06, z + 0.112, { shadow: false });
   animated.push((t) => { led.material.emissiveIntensity = 1.2 + Math.sin(t * 2) * 0.8; });
-  label('❄️ AC', x - 0.3, y + 0.3, z, 'ac', null, r.id);
+  label('❄️ AC', x, y + 0.3, z + 0.25, 'ac', null, r.id);
 }
 function wardrobe(r) {
-  // Lemari menempel dinding belakang kamar, dekat lorong
-  const x = COR_X + 0.65, z = r.z1 - 0.35;
-  box(1.0, 1.9, 0.55, M('#C69C6D', { roughness: 0.6 }), x, 0.95, z, { collide: true });
-  box(0.01, 1.8, 0.01, mat.woodDark, x, 0.95, z - 0.28);
-  [-0.06, 0.06].forEach((d) => box(0.02, 0.18, 0.03, mat.steel, x + d, 1.0, z - 0.29, { shadow: false }));
-}
-function desk(r) {
-  // Meja kecil di bawah jendela lorong + kursi
-  const x = COR_X + 0.35, z = r.z0 + 1.75;
-  box(0.55, 0.04, 1.0, M('#D4B08A', { roughness: 0.55 }), x, 0.75, z, { collide: true });
-  [[-0.22, -0.45], [0.22, -0.45], [-0.22, 0.45], [0.22, 0.45]].forEach(([dx, dz]) => box(0.04, 0.73, 0.04, mat.woodDark, x + dx, 0.365, z + dz));
-  box(0.4, 0.04, 0.4, M('#7C3AED', { roughness: 0.7 }), x + 0.55, 0.46, z, { collide: true });
-  box(0.04, 0.45, 0.4, M('#7C3AED', { roughness: 0.7 }), x + 0.75, 0.7, z);
-  box(0.02, 0.22, 0.34, mat.dark, x - 0.12, 0.9, z, { shadow: false }); // laptop
+  // Lemari plastik 3 susun (rangka hitam, pintu oranye) di samping kepala kasur
+  const x = BATH_X - 0.45, z = r.z0 + T / 2 + 0.26, w = 0.6, d = 0.45, h = 1.35;
+  box(w, h, d, M('#1F2228', { roughness: 0.5 }), x, h / 2, z, { collide: true });
+  const door = M('#E2A23B', { roughness: 0.55 });
+  for (let i = 0; i < 3; i++) {
+    const y = 0.08 + i * 0.43 + 0.19;
+    [-0.145, 0.145].forEach((dx) => box(0.27, 0.38, 0.015, door, x + dx, y, z + d / 2 + 0.005, { shadow: false }));
+    box(0.015, 0.1, 0.02, M('#7C4A10'), x - 0.02, y, z + d / 2 + 0.015, { shadow: false });
+  }
 }
 function lamp(r) {
   const x = (COR_X + RIGHT_X) / 2 - 0.4, z = (r.z0 + r.z1) / 2 - 0.4;
@@ -531,46 +582,46 @@ function bathroom(r) {
   const zb0 = r.z1 - BATH_D, zb1 = r.z1;   // 1,5 m (sepanjang lorong) × 2 m (x 4.6..6.6)
   // Dinding kamar mandi + pintu (membuka ke arah kamar)
   const bd = { a: zb0 + 0.15, b: zb0 + 0.8 };
-  wall('z', BATH_X, zb0, zb1, [{ ...bd, y0: 0, y1: 2.0 }], mat.bathWall);
-  wall('x', zb0, BATH_X, RIGHT_X, [], mat.bathWall);
+  wall('z', BATH_X, zb0, zb1, [{ ...bd, y0: 0, y1: 2.0 }]);
+  wall('x', zb0, BATH_X, RIGHT_X);
+  // Lapisan keramik motif bunga di keempat sisi dalam kamar mandi
+  const CL = 0.012, TILE_H = 1.9;
+  wall('z', BATH_X + T / 2 + CL / 2, zb0 + T / 2, zb1 - T / 2, [{ ...bd, y0: 0, y1: 2.0 }], mat.bathWall, CL, TILE_H, false);
+  wall('z', RIGHT_X - CL / 2, zb0 + T / 2, zb1 - T / 2, [], mat.bathWall, CL, TILE_H, false);
+  wall('x', zb0 + T / 2 + CL / 2, BATH_X + T / 2, RIGHT_X, [], mat.bathWall, CL, TILE_H, false);
+  wall('x', zb1 - T / 2 - CL / 2, BATH_X + T / 2, RIGHT_X, [], mat.bathWall, CL, TILE_H, false);
   frame(BATH_X, bd.a, bd.b, 0, 2.0);
   r.bathDoor = hingedDoor(BATH_X - T / 2, bd.a, bd.b - bd.a, 1.95, -1.3, M('#E9E6EF', { roughness: 0.5 }));
   r.bath = { x0: BATH_X, x1: RIGHT_X, z0: zb0, z1: zb1 };
-  // Kloset jongkok di pojok belakang, di atas undakan rendah
-  const kx = RIGHT_X - 0.55, kz = zb1 - 0.45;
-  box(0.95, 0.08, 0.8, M('#DCEDE8', { roughness: 0.4 }), RIGHT_X - 0.5, 0.04, zb1 - 0.43);
-  const pan = new THREE.Mesh(new RoundedBoxGeometry(0.58, 0.05, 0.42, 3, 0.03), mat.ceramic);
-  pan.position.set(kx, 0.105, kz); pan.castShadow = true; scene.add(pan);
-  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.012, 28), M('#E3E7EC', { roughness: 0.2 }));
-  bowl.scale.set(1.45, 1, 1); bowl.position.set(kx + 0.06, 0.132, kz); scene.add(bowl);
-  const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.014, 20), M('#9AA4B0', { roughness: 0.3 }));
-  hole.position.set(kx + 0.14, 0.134, kz); scene.add(hole);
-  [-0.12, 0.12].forEach((dz) => box(0.2, 0.012, 0.09, M('#F1F3F6', { roughness: 0.5 }), kx - 0.18, 0.134, kz + dz, { shadow: false })); // pijakan kaki
-  // Shower di dinding belakang + saluran air
-  const shx = BATH_X + 0.55;
-  box(0.03, 1.4, 0.03, mat.steel, shx, 1.4, zb1 - 0.1);
-  const head = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.07, 0.03, 20), mat.steel); head.position.set(shx, 2.12, zb1 - 0.25); head.rotation.x = 0.4; scene.add(head);
-  box(0.02, 0.02, 0.18, mat.steel, shx, 2.12, zb1 - 0.15);
-  box(0.12, 0.08, 0.04, mat.steel, shx, 1.05, zb1 - 0.1);
-  box(0.12, 0.005, 0.12, mat.steel, shx, 0.003, zb1 - 0.45, { shadow: false });
-  // Wastafel + cermin di dinding depan kamar mandi
-  const sx = RIGHT_X - 0.5, sz = zb0 + 0.25;
-  const basin = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.16, 0.34, 3, 0.04), mat.ceramic); basin.position.set(sx, 0.82, sz); basin.castShadow = true; scene.add(basin);
-  box(0.04, 0.12, 0.04, mat.steel, sx, 0.95, sz - 0.12); box(0.04, 0.03, 0.12, mat.steel, sx, 1.0, sz - 0.08);
-  box(0.06, 0.7, 0.06, mat.ceramic, sx, 0.37, sz - 0.08);
-  box(0.44, 0.6, 0.02, mat.mirror, sx, 1.35, zb0 + T / 2 + 0.02, { shadow: false });
-  colliders.push([sx - 0.25, zb0, sx + 0.25, zb0 + 0.45]);
-  // Ember & gayung di dekat kloset
-  const ex = RIGHT_X - 1.25, ez = zb1 - 0.35;
-  const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.13, 0.32, 18), M('#60A5FA', { roughness: 0.5 })); bucket.position.set(ex, 0.16, ez); bucket.castShadow = true; scene.add(bucket);
-  const gayung = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.08, 14), M('#F472B6', { roughness: 0.5 })); gayung.position.set(ex + 0.05, 0.36, ez); scene.add(gayung);
-  box(0.16, 0.02, 0.02, M('#F472B6'), ex + 0.17, 0.37, ez, { shadow: false });
-  colliders.push([ex - 0.18, ez - 0.18, ex + 0.18, ez + 0.18]);
+  // Undakan tinggi berkeramik hijau di pojok belakang + kloset jongkok krem di atasnya
+  const px0 = RIGHT_X - 0.95, pz0 = zb1 - 1.0, ph = 0.3;
+  const stepMat = new THREE.MeshStandardMaterial({ map: greenTileTex(0.95, 1.0), roughness: 0.35 });
+  box(RIGHT_X - px0, ph, zb1 - pz0, stepMat, (px0 + RIGHT_X) / 2, ph / 2, (pz0 + zb1) / 2);
+  colliders.push([px0, pz0, RIGHT_X, zb1]);
+  const kx = px0 + 0.45, kz = pz0 + 0.5, cream = M('#EADFC2', { roughness: 0.25 });
+  const pan = new THREE.Mesh(new RoundedBoxGeometry(0.42, 0.06, 0.6, 3, 0.03), cream); pan.position.set(kx, ph + 0.03, kz); pan.castShadow = true; scene.add(pan);
+  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.012, 28), M('#D8CCAD', { roughness: 0.25 })); bowl.scale.set(1, 1, 1.5); bowl.position.set(kx, ph + 0.062, kz + 0.06); scene.add(bowl);
+  const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.014, 20), M('#A59A80')); hole.position.set(kx, ph + 0.064, kz + 0.16); scene.add(hole);
+  [-0.12, 0.12].forEach((dx) => box(0.09, 0.012, 0.18, M('#F2EAD3'), kx + dx, ph + 0.064, kz - 0.18, { shadow: false }));
+  const brush = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.1, 12), M('#A3E635')); brush.position.set(RIGHT_X - 0.12, ph + 0.05, zb1 - 0.12); scene.add(brush);
+  box(0.015, 0.4, 0.015, M('#65A30D'), RIGHT_X - 0.12, ph + 0.3, zb1 - 0.12, { shadow: false });
+  // Kran air di dinding belakang + ember hitam besar & gayung
+  const tx = BATH_X + 0.45;
+  box(0.05, 0.05, 0.12, mat.steel, tx, 0.75, zb1 - 0.06); box(0.03, 0.08, 0.03, mat.steel, tx, 0.7, zb1 - 0.12);
+  const black = M('#1A1A1E', { roughness: 0.45 });
+  const big = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.23, 0.48, 24, 1, true), black); big.material.side = THREE.DoubleSide; big.position.set(tx, 0.24, zb1 - 0.33); big.castShadow = true; scene.add(big);
+  const water = new THREE.Mesh(new THREE.CircleGeometry(0.255, 24), M('#9BC7D8', { roughness: 0.1, transparent: true, opacity: 0.85 })); water.rotation.x = -Math.PI / 2; water.position.set(tx, 0.4, zb1 - 0.33); scene.add(water);
+  const gayung = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.065, 0.09, 16), M('#2DD4BF', { roughness: 0.5 })); gayung.position.set(tx + 0.05, 0.44, zb1 - 0.33); scene.add(gayung);
+  box(0.18, 0.02, 0.025, M('#2DD4BF'), tx + 0.18, 0.46, zb1 - 0.33, { shadow: false });
+  const small = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.17, 0.36, 22), black); small.position.set(tx + 0.5, 0.18, zb1 - 0.25); small.castShadow = true; scene.add(small);
+  colliders.push([tx - 0.3, zb1 - 0.6, tx + 0.72, zb1]);
+  // Rak sabun keranjang hijau di dinding
+  box(0.36, 0.12, 0.16, M('#84CC16', { roughness: 0.6 }), tx + 0.1, 1.85, zb1 - 0.1);
   label('🚿 Kamar mandi dalam', (BATH_X + RIGHT_X) / 2, 2.2, (zb0 + zb1) / 2, 'km', null, r.id);
 }
 function wifiRouter(r) {
   // Router di dinding depan kamar 1 (sisi dalam), dekat pintu
-  const x = 3.3, y = 2.15, z = TERRACE_Z + T / 2 + 0.03;
+  const x = 3.2, y = 2.15, z = TERRACE_Z + T / 2 + 0.03;
   const g = new THREE.Group(); g.position.set(x, y, z); scene.add(g);
   const body = new THREE.Mesh(new RoundedBoxGeometry(0.3, 0.18, 0.05, 3, 0.015), mat.white); g.add(body);
   [-0.11, 0.11].forEach((dx, i) => {
@@ -593,53 +644,53 @@ function wifiRouter(r) {
   });
   label('📶 WiFi 150 Mbps', x, y + 0.55, z + 0.2, 'wifi', null, r.id, true);
 }
-ROOMS.forEach((r) => { bed(r); ac(r); wardrobe(r); desk(r); lamp(r); bathroom(r); if (r.wifi) wifiRouter(r); });
+ROOMS.forEach((r) => { bed(r); ac(r); wardrobe(r); lamp(r); bathroom(r); if (r.wifi) wifiRouter(r); });
 
 /* ════════════════ LORONG, TERAS, BELAKANG ════════════════ */
-// Lampu downlight lorong
-[3, 5.5, 8, 10].forEach((z) => {
-  const d = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.02, 18), new THREE.MeshStandardMaterial({ color: '#fff', emissive: '#FFF5DD', emissiveIntensity: 1.4 }));
-  d.position.set(1.3, H - 0.01, z); ceiling.add(d);
+// Lampu bohlam gantung di plafon lorong (seperti di foto)
+[1.8, 4.6, 7.4, 10.6].forEach((z) => {
+  const b = new THREE.Mesh(new THREE.SphereGeometry(0.05, 14, 10), new THREE.MeshStandardMaterial({ color: '#fff', emissive: '#FFF5DD', emissiveIntensity: 1.8 }));
+  b.position.set(1.4, H - 0.12, z); ceiling.add(b);
+  const c = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.06, 10), mat.white); c.position.set(1.4, H - 0.05, z); ceiling.add(c);
 });
-const corLight = new THREE.PointLight('#FFF3DC', 0, 10, 1.5); corLight.position.set(1.3, H - 0.4, 7); scene.add(corLight);
-// Meteran listrik di dinding lorong
-box(0.08, 0.32, 0.22, mat.white, COR_X - T / 2 - 0.04, 2.2, 1.9);
-box(0.01, 0.1, 0.12, mat.dark, COR_X - T / 2 - 0.085, 2.25, 1.9, { shadow: false });
-// Tiang bambu & balok teras (masih tahap renovasi di video)
-[[0.25, 0.15], [2.4, 0.15], [4.8, 0.15]].forEach(([x, z]) => {
-  const p = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, H, 10), mat.bamboo); p.position.set(x, H / 2, z); p.castShadow = true; scene.add(p);
-  box(0.24, 0.3, 0.24, mat.brick, x, 0.15, z, { collide: true });
-});
-box(RIGHT_X, 0.16, 0.2, mat.wood, RIGHT_X / 2, H - 0.08, 0.15);
-// Tangga ke lantai atas (di belakang kiri, seperti di video)
-const steps = 14, sz0 = 10.8, sz1 = 14.4, sw = 1.0;
+const corLight = new THREE.PointLight('#FFF3DC', 0, 10, 1.5); corLight.position.set(1.3, H - 0.4, 5); scene.add(corLight);
+// Kotak listrik kecil di dinding lorong
+box(0.08, 0.22, 0.16, mat.white, COR_X - T / 2 - 0.04, 2.35, 2.4);
+// Tangga ke lantai atas di belakang kiri + pegangan besi
+const steps = 15, sz0 = COR_END + 0.1, sz1 = BACK_Z - 0.1, sw = 1.0;
 for (let i = 0; i < steps; i++) {
   const hgt = ((i + 1) / steps) * H, dz = (sz1 - sz0) / steps;
-  box(sw, hgt, dz, mat.concrete, sw / 2 + 0.02, hgt / 2, sz0 + dz * (i + 0.5));
+  box(sw, hgt, dz, M('#B8A58C', { roughness: 0.95 }), sw / 2 + 0.02, hgt / 2, sz0 + dz * (i + 0.5));
 }
 colliders.push([0, sz0, sw + 0.05, sz1]);
-// Motor parkir
-function motorbike(x, z, rot) {
-  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
-  [-0.6, 0.6].forEach((dz) => { const w = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.07, 10, 24), mat.dark); w.rotation.y = Math.PI / 2; w.position.set(0, 0.31, dz); w.castShadow = true; g.add(w); });
-  box(0.3, 0.35, 1.1, M('#1F2937', { roughness: 0.4 }), 0, 0.55, 0, { parent: g });
-  box(0.28, 0.1, 0.6, M('#111827'), 0, 0.78, -0.2, { parent: g });
-  box(0.5, 0.05, 0.05, mat.steel, 0, 1.0, 0.55, { parent: g });
-  box(0.24, 0.24, 0.12, M('#DC2626', { roughness: 0.4 }), 0, 0.82, 0.58, { parent: g });
-  colliders.push([x - 0.35, z - 0.8, x + 0.35, z + 0.8]);
-}
-motorbike(2.2, 12.4, 0.15);
-motorbike(3.4, 12.8, -0.1);
+const railLen = Math.hypot(sz1 - sz0, H);
+const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, railLen, 8), mat.steel);
+rail.position.set(sw + 0.06, H / 2 + 0.9, (sz0 + sz1) / 2); rail.rotation.x = Math.atan2(sz1 - sz0, H); scene.add(rail);
+[sz0 + 0.1, (sz0 + sz1) / 2, sz1 - 0.1].forEach((z) => {
+  const yb = ((z - sz0) / (sz1 - sz0)) * H;
+  box(0.025, 0.9, 0.025, mat.steel, sw + 0.06, yb + 0.45, z, { shadow: false });
+});
+// Gantungan jemuran di dinding belakang
+box(1.9, 0.03, 0.03, mat.steel, 3.6, 1.95, BACK_Z - 0.25);
+[2.65, 4.55].forEach((x) => box(0.03, 0.03, 0.25, mat.steel, x, 1.95, BACK_Z - 0.12));
+// Meja cuci kecil di samping tangga
+box(0.6, 0.06, 0.5, mat.white, 1.45, 0.82, BACK_Z - 0.3, { collide: true });
+box(0.08, 0.8, 0.45, mat.white, 1.73, 0.4, BACK_Z - 0.3);
+// Sapu & pengki
+[[2.9, '#F97316'], [3.15, '#22C55E']].forEach(([x, c]) => {
+  const st = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 1.1, 6), mat.steel); st.position.set(x, 0.6, BACK_Z - 0.12); st.rotation.x = -0.12; scene.add(st);
+  box(0.25, 0.05, 0.12, M(c), x, 0.04, BACK_Z - 0.2, { shadow: false });
+});
 
 /* ── Label area ── */
 ROOMS.forEach((r) => {
   r.labelObj = label(r.name, (COR_X + BATH_X) / 2, 2.9, (r.z0 + r.z1) / 2 - 0.3, 'room area', `${r.tag} · 3 × 4 m`);
 });
-label('Lorong', 1.3, 0.4, 6.8, 'area dim');
-label('Teras depan', 1.1, 0.4, 0.25, 'area dim');
-label('Tangga ke atas', 0.6, 3.3, 12.6, 'area dim');
-label('Parkir motor', 3.4, 1.4, 12.9, 'area dim');
-label('Roster', -0.2, 2.8, 3.6, 'area dim');
+label('Lorong', 0.9, 0.4, 4.5, 'area dim');
+label('Pagar depan', 1.3, 2.1, -0.4, 'area dim');
+label('Tangga ke atas', 0.6, 3.3, 11.2, 'area dim');
+label('Jemuran', 3.6, 2.3, BACK_Z - 0.4, 'area dim');
+label('Roster', -0.2, 2.9, 6.6, 'area dim');
 
 /* ════════════════ NAVIGASI ════════════════ */
 const ui = {
@@ -686,13 +737,13 @@ function showOrbit() {
   exitWalk();
   mode = 'orbit'; setActiveView('orbit'); setActiveRoom(null); hideInfo();
   controls.enabled = true; controls.enableRotate = true;
-  flyTo(new THREE.Vector3(-7, 11, -6), new THREE.Vector3(3.3, 0, 7.25));
+  flyTo(new THREE.Vector3(-6.5, 10.5, -6.5), new THREE.Vector3(3.3, 0, 6.5));
 }
 function showTop() {
   exitWalk();
   mode = 'top'; setActiveView('top'); setActiveRoom(null); hideInfo();
   controls.enabled = true;
-  flyTo(new THREE.Vector3(3.3, 22, 7.26), new THREE.Vector3(3.3, 0, 7.25));
+  flyTo(new THREE.Vector3(3.3, 20, 6.51), new THREE.Vector3(3.3, 0, 6.5));
 }
 function setFov(f) { camera.fov = f; camera.updateProjectionMatrix(); }
 function startWalk(pos, yaw, pitch = -0.05) {
@@ -721,15 +772,15 @@ function enterRoom(id) {
   setActiveView(null); setActiveRoom(id);
   // Berdiri di dalam kamar dekat pintu, menghadap kasur & AC
   // Berdiri tepat setelah pintu masuk, menghadap kasur & AC di dinding seberang
-  const p = new THREE.Vector3(COR_X + 0.6, EYE, r.z0 + 0.8);
-  startWalk(p, Math.atan2(6.0 - p.x, r.z0 + 1.05 - p.z), -0.12);
+  const p = new THREE.Vector3(3.3, EYE, r.z0 + 2.15);
+  startWalk(p, Math.atan2(5.4 - p.x, r.z0 + 0.35 - p.z), -0.2);
   showInfo(r);
 }
 function enterBath(id) {
   const r = ROOMS.find((x) => x.id === id);
   // Berdiri tepat di dalam pintu kamar mandi, menghadap pojok shower & kloset
   const p = new THREE.Vector3(BATH_X + 0.25, EYE, r.bath.z0 + 0.48);
-  startWalk(p, Math.atan2(RIGHT_X - 0.5 - p.x, r.bath.z1 - 0.45 - p.z), -0.55);
+  startWalk(p, Math.atan2(RIGHT_X - 0.6 - p.x, r.bath.z1 - 0.4 - p.z), -0.45);
   showInfo(r, true);
 }
 function walkCorridor() {
@@ -744,8 +795,8 @@ function showInfo(r, inBath) {
   ui.infoTitle.textContent = r.name;
   ui.infoSize.textContent = inBath ? `${r.name} · 1,5 × 2 m` : 'Ukuran 3 × 4 m · termasuk kamar mandi 1,5 × 2 m';
   const items = inBath
-    ? [['🚽', 'Kloset jongkok'], ['🚿', 'Shower'], ['🪞', 'Wastafel & cermin'], ['🪣', 'Ember & gayung']]
-    : [['🛏️', 'Kasur 120 × 200 + 2 bantal & guling'], ['❄️', 'AC split di atas kasur'], ['🚿', 'Kamar mandi dalam'], ['🗄️', 'Lemari pakaian'], ['💻', 'Meja kecil & kursi'],
+    ? [['🚽', 'Kloset jongkok di atas undakan'], ['🚰', 'Kran air'], ['🪣', 'Ember besar & gayung'], ['🧺', 'Rak sabun'], ['🌹', 'Dinding keramik motif bunga']]
+    : [['🛏️', 'Kasur busa + bantal & guling'], ['❄️', 'AC di atas kasur'], ['🚿', 'Kamar mandi dalam'], ['🗄️', 'Lemari plastik 3 susun'],
        r.wifi ? ['📶', 'Router WiFi 150 Mbps di dinding kamar ini'] : ['📶', 'WiFi 150 Mbps (router di Kamar 1)']];
   ui.infoList.innerHTML = items.map(([i, t]) => `<li><span>${i}</span><span>${t}</span></li>`).join('');
   ui.infoActions.innerHTML = '';

@@ -148,7 +148,7 @@ button { font: inherit; color: inherit; }
   <a class="back" href="index.html">← Beranda</a>
   <div class="title">
     <h1>Denah 3D <span>Genzed Kost</span></h1>
-    <p>Dibuat dari video bangunan · ukuran perkiraan</p>
+    <p>Dibuat dari video bangunan · kamar 3 × 4 m, kamar mandi 1,5 × 2 m</p>
   </div>
   <div class="top-actions">
     <button class="chip-btn" id="btnLabels" aria-pressed="true">Label</button>
@@ -211,16 +211,17 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
    ════════════════════════════════════════════════════════════════ */
 const H = 3.0, T = 0.15;            // tinggi plafon, tebal dinding
 const COR_X = 2.6;                  // lorong: x 0..2.6 ; kamar: x 2.6..6.8
-const RIGHT_X = 6.8;
+const RIGHT_X = 6.6;                // kamar 3 m (sepanjang lorong) × 4 m (x 2.6..6.6)
 const TERRACE_Z = 1.5;              // teras depan z 0..1.5
 const ROOMS = [
-  { id: 1, name: 'Kamar 1', tag: 'Depan', z0: 1.5, z1: 5.0, wifi: true },
-  { id: 2, name: 'Kamar 2', tag: 'Tengah', z0: 5.0, z1: 8.5 },
-  { id: 3, name: 'Kamar 3', tag: 'Belakang', z0: 8.5, z1: 12.0 },
+  { id: 1, name: 'Kamar 1', tag: 'Depan', z0: 1.5, z1: 4.5, wifi: true },
+  { id: 2, name: 'Kamar 2', tag: 'Tengah', z0: 4.5, z1: 7.5 },
+  { id: 3, name: 'Kamar 3', tag: 'Belakang', z0: 7.5, z1: 10.5 },
 ];
-const BACK_Z = 16;                  // area belakang (parkir + tangga) z 12..16
-const BATH_X = 5.2;                 // kamar mandi: x 5.2..6.8, 1,7 m terakhir tiap kamar
-const BATH_D = 1.7;
+const COR_END = 10.5;               // ujung deretan kamar
+const BACK_Z = 14.5;                // area belakang (parkir + tangga) z 10.5..14.5
+const BATH_X = 4.6;                 // kamar mandi 2 × 1,5 m di pojok belakang kamar: x 4.6..6.6
+const BATH_D = 1.5;                 // … dan 1,5 m terakhir tiap kamar (sepanjang lorong)
 
 const container = document.getElementById('scene');
 const isTouch = matchMedia('(pointer: coarse)').matches;
@@ -257,7 +258,7 @@ controls.enableDamping = true;
 controls.maxPolarAngle = Math.PI * 0.49;
 controls.minDistance = 4;
 controls.maxDistance = 45;
-controls.target.set(3.4, 0, 8);
+controls.target.set(3.3, 0, 7.25);
 
 /* ── Cahaya ── */
 scene.add(new THREE.HemisphereLight('#FFFFFF', '#D9CFC2', 1.25));
@@ -267,7 +268,7 @@ sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 50 });
 sun.shadow.bias = -0.0004;
-sun.target.position.set(3.4, 0, 8);
+sun.target.position.set(3.3, 0, 7.25);
 scene.add(sun, sun.target);
 
 /* ── Tekstur buatan (canvas) ── */
@@ -388,11 +389,11 @@ function label(text, x, y, z, cls = '', small, room = null, always = false) {
 /* ════════════════ BANGUNAN ════════════════ */
 // Tanah & lantai
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), mat.ground);
-ground.rotation.x = -Math.PI / 2; ground.position.set(3.4, -0.06, 8); ground.receiveShadow = true; scene.add(ground);
+ground.rotation.x = -Math.PI / 2; ground.position.set(3.3, -0.06, 7.25); ground.receiveShadow = true; scene.add(ground);
 box(RIGHT_X + 0.3, 0.06, BACK_Z + 0.3, mat.concrete, RIGHT_X / 2, -0.03, BACK_Z / 2, { shadow: false });
 floor(0, 0, RIGHT_X, TERRACE_Z, 'terrace');
-floor(0, TERRACE_Z, COR_X, 12, 'corridor');
-floor(0, 12, RIGHT_X, BACK_Z, 'pattern');
+floor(0, TERRACE_Z, COR_X, COR_END, 'corridor');
+floor(0, COR_END, RIGHT_X, BACK_Z, 'pattern');
 const roomFloors = [];
 ROOMS.forEach((r) => {
   const f = floor(COR_X, r.z0, BATH_X, r.z1, 'room'); f.userData.room = r.id; roomFloors.push(f);
@@ -401,7 +402,7 @@ ROOMS.forEach((r) => {
 });
 
 // Dinding kiri (lorong) dengan 2 panel roster
-const rosterHoles = [{ a: 2.6, b: 5.6, y0: 0.9, y1: 2.5 }, { a: 7.0, b: 10.0, y0: 0.9, y1: 2.5 }];
+const rosterHoles = [{ a: 2.3, b: 5.0, y0: 0.9, y1: 2.5 }, { a: 6.2, b: 8.9, y0: 0.9, y1: 2.5 }];
 wall('z', -T / 2, 0, BACK_Z, rosterHoles, mat.wallOut);
 rosterHoles.forEach((h) => {
   const w = h.b - h.a, hh = h.y1 - h.y0;
@@ -423,7 +424,7 @@ ROOMS.forEach((r) => {
   corHoles.push({ ...r.door, y0: 0, y1: 2.1 }, { ...r.win, y0: 0.7, y1: 2.2 });
   [[r.z0 + 0.4, r.z0 + 0.7], [r.z0 + 0.82, r.z0 + 1.12], [r.z0 + 1.55, r.z0 + 1.85]].forEach(([a, b]) => corHoles.push({ a, b, y0: 2.42, y1: 2.62 }));
 });
-wall('z', COR_X, TERRACE_Z, 12, corHoles);
+wall('z', COR_X, TERRACE_Z, COR_END, corHoles);
 // Dinding antar kamar & belakang kamar 3
 ROOMS.forEach((r) => wall('x', r.z1, COR_X, RIGHT_X));
 // Plafon (disembunyikan di tampilan atas)
@@ -475,7 +476,7 @@ box(1.2, 1.2, 0.03, mat.glass, 4.9, 1.6, TERRACE_Z, { shadow: false });
 /* ════════════════ ISI KAMAR ════════════════ */
 const animated = [];
 function bed(r) {
-  const zc = r.z0 + 0.8, x1 = RIGHT_X - 0.05, len = 2.0, x0 = x1 - len, w = 1.2, xc = (x0 + x1) / 2;
+  const zc = r.z0 + 0.75, x1 = RIGHT_X - 0.05, len = 2.0, x0 = x1 - len, w = 1.2, xc = (x0 + x1) / 2;
   box(len, 0.28, w, mat.wood, xc, 0.14, zc, { collide: true });
   box(len - 0.04, 0.24, w - 0.04, mat.mattress, xc, 0.4, zc);
   box(0.08, 1.0, w + 0.04, mat.woodDark, x1 - 0.04, 0.5, zc);
@@ -496,7 +497,7 @@ function bed(r) {
   label('Kasur · bantal · guling', xc - 0.2, 0.95, zc, 'dim', null, r.id);
 }
 function ac(r) {
-  const x = RIGHT_X - 0.13, y = 2.5, z = r.z0 + 0.8;
+  const x = RIGHT_X - 0.13, y = 2.5, z = r.z0 + 0.75;
   const body = new THREE.Mesh(new RoundedBoxGeometry(0.22, 0.29, 0.88, 3, 0.04), mat.white);
   body.position.set(x, y, z); body.castShadow = true; scene.add(body);
   box(0.01, 0.04, 0.7, mat.dark, x - 0.112, y - 0.09, z, { shadow: false });
@@ -505,18 +506,20 @@ function ac(r) {
   label('❄️ AC', x - 0.3, y + 0.3, z, 'ac', null, r.id);
 }
 function wardrobe(r) {
-  const x = COR_X + 0.42, z = r.z1 - 0.65;
-  box(0.6, 1.9, 1.0, M('#C69C6D', { roughness: 0.6 }), x, 0.95, z, { collide: true });
-  box(0.01, 1.8, 0.01, mat.woodDark, x + 0.305, 0.95, z);
-  [-0.06, 0.06].forEach((d) => box(0.03, 0.18, 0.02, mat.steel, x + 0.31, 1.0, z + d, { shadow: false }));
+  // Lemari menempel dinding belakang kamar, dekat lorong
+  const x = COR_X + 0.65, z = r.z1 - 0.35;
+  box(1.0, 1.9, 0.55, M('#C69C6D', { roughness: 0.6 }), x, 0.95, z, { collide: true });
+  box(0.01, 1.8, 0.01, mat.woodDark, x, 0.95, z - 0.28);
+  [-0.06, 0.06].forEach((d) => box(0.02, 0.18, 0.03, mat.steel, x + d, 1.0, z - 0.29, { shadow: false }));
 }
 function desk(r) {
-  const x = 4.2, z = r.z1 - 0.35;
-  box(1.1, 0.04, 0.55, M('#D4B08A', { roughness: 0.55 }), x, 0.75, z, { collide: true });
-  [[-0.5, -0.22], [0.5, -0.22], [-0.5, 0.22], [0.5, 0.22]].forEach(([dx, dz]) => box(0.04, 0.73, 0.04, mat.woodDark, x + dx, 0.365, z + dz));
-  box(0.42, 0.04, 0.42, M('#7C3AED', { roughness: 0.7 }), x, 0.46, z - 0.55);
-  box(0.42, 0.45, 0.04, M('#7C3AED', { roughness: 0.7 }), x, 0.7, z - 0.76);
-  box(0.36, 0.22, 0.02, mat.dark, x, 0.9, z + 0.18, { shadow: false }); // monitor/laptop
+  // Meja kecil di bawah jendela lorong + kursi
+  const x = COR_X + 0.35, z = r.z0 + 1.75;
+  box(0.55, 0.04, 1.0, M('#D4B08A', { roughness: 0.55 }), x, 0.75, z, { collide: true });
+  [[-0.22, -0.45], [0.22, -0.45], [-0.22, 0.45], [0.22, 0.45]].forEach(([dx, dz]) => box(0.04, 0.73, 0.04, mat.woodDark, x + dx, 0.365, z + dz));
+  box(0.4, 0.04, 0.4, M('#7C3AED', { roughness: 0.7 }), x + 0.55, 0.46, z, { collide: true });
+  box(0.04, 0.45, 0.4, M('#7C3AED', { roughness: 0.7 }), x + 0.75, 0.7, z);
+  box(0.02, 0.22, 0.34, mat.dark, x - 0.12, 0.9, z, { shadow: false }); // laptop
 }
 function lamp(r) {
   const x = (COR_X + RIGHT_X) / 2 - 0.4, z = (r.z0 + r.z1) / 2 - 0.4;
@@ -525,39 +528,44 @@ function lamp(r) {
   const pl = new THREE.PointLight('#FFF3DC', 0, 7, 1.6); pl.position.set(x, H - 0.3, z); scene.add(pl); r.light = pl;
 }
 function bathroom(r) {
-  const zb0 = r.z1 - BATH_D, zb1 = r.z1;
-  // Dinding kamar mandi + pintu
-  const bd = { a: zb0 + 0.25, b: zb0 + 0.9 };
+  const zb0 = r.z1 - BATH_D, zb1 = r.z1;   // 1,5 m (sepanjang lorong) × 2 m (x 4.6..6.6)
+  // Dinding kamar mandi + pintu (membuka ke arah kamar)
+  const bd = { a: zb0 + 0.15, b: zb0 + 0.8 };
   wall('z', BATH_X, zb0, zb1, [{ ...bd, y0: 0, y1: 2.0 }], mat.bathWall);
   wall('x', zb0, BATH_X, RIGHT_X, [], mat.bathWall);
   frame(BATH_X, bd.a, bd.b, 0, 2.0);
-  // Pintu kamar mandi membuka ke arah kamar (lebih lega untuk kamar mandi kecil)
   r.bathDoor = hingedDoor(BATH_X - T / 2, bd.a, bd.b - bd.a, 1.95, -1.3, M('#E9E6EF', { roughness: 0.5 }));
   r.bath = { x0: BATH_X, x1: RIGHT_X, z0: zb0, z1: zb1 };
-  // Kloset duduk
-  const kx = RIGHT_X - 0.4, kz = zb0 + 0.55;
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.14, 0.38, 20), mat.ceramic); base.position.set(kx - 0.05, 0.19, kz); base.castShadow = true; scene.add(base);
-  const seat = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.035, 10, 24), mat.ceramic); seat.rotation.x = Math.PI / 2; seat.scale.set(1.15, 1, 1); seat.position.set(kx - 0.08, 0.4, kz); scene.add(seat);
-  box(0.18, 0.36, 0.42, mat.ceramic, RIGHT_X - 0.12, 0.6, kz);
-  colliders.push([kx - 0.3, kz - 0.25, RIGHT_X, kz + 0.25]);
+  // Kloset jongkok di pojok belakang, di atas undakan rendah
+  const kx = RIGHT_X - 0.55, kz = zb1 - 0.45;
+  box(0.95, 0.08, 0.8, M('#DCEDE8', { roughness: 0.4 }), RIGHT_X - 0.5, 0.04, zb1 - 0.43);
+  const pan = new THREE.Mesh(new RoundedBoxGeometry(0.58, 0.05, 0.42, 3, 0.03), mat.ceramic);
+  pan.position.set(kx, 0.105, kz); pan.castShadow = true; scene.add(pan);
+  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.012, 28), M('#E3E7EC', { roughness: 0.2 }));
+  bowl.scale.set(1.45, 1, 1); bowl.position.set(kx + 0.06, 0.132, kz); scene.add(bowl);
+  const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.014, 20), M('#9AA4B0', { roughness: 0.3 }));
+  hole.position.set(kx + 0.14, 0.134, kz); scene.add(hole);
+  [-0.12, 0.12].forEach((dz) => box(0.2, 0.012, 0.09, M('#F1F3F6', { roughness: 0.5 }), kx - 0.18, 0.134, kz + dz, { shadow: false })); // pijakan kaki
+  // Shower di dinding belakang + saluran air
+  const shx = BATH_X + 0.55;
+  box(0.03, 1.4, 0.03, mat.steel, shx, 1.4, zb1 - 0.1);
+  const head = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.07, 0.03, 20), mat.steel); head.position.set(shx, 2.12, zb1 - 0.25); head.rotation.x = 0.4; scene.add(head);
+  box(0.02, 0.02, 0.18, mat.steel, shx, 2.12, zb1 - 0.15);
+  box(0.12, 0.08, 0.04, mat.steel, shx, 1.05, zb1 - 0.1);
+  box(0.12, 0.005, 0.12, mat.steel, shx, 0.003, zb1 - 0.45, { shadow: false });
   // Wastafel + cermin di dinding depan kamar mandi
-  const sx = BATH_X + 0.95, sz = zb0 + 0.25;
-  const basin = new THREE.Mesh(new RoundedBoxGeometry(0.48, 0.16, 0.36, 3, 0.04), mat.ceramic); basin.position.set(sx, 0.82, sz); basin.castShadow = true; scene.add(basin);
+  const sx = RIGHT_X - 0.5, sz = zb0 + 0.25;
+  const basin = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.16, 0.34, 3, 0.04), mat.ceramic); basin.position.set(sx, 0.82, sz); basin.castShadow = true; scene.add(basin);
   box(0.04, 0.12, 0.04, mat.steel, sx, 0.95, sz - 0.12); box(0.04, 0.03, 0.12, mat.steel, sx, 1.0, sz - 0.08);
   box(0.06, 0.7, 0.06, mat.ceramic, sx, 0.37, sz - 0.08);
-  box(0.46, 0.6, 0.02, mat.mirror, sx, 1.35, zb0 + T / 2 + 0.02, { shadow: false });
-  // Shower di pojok belakang
-  const shx = RIGHT_X - 0.35, shz = zb1 - 0.35;
-  box(0.6, 0.04, 0.6, M('#DDEBE7', { roughness: 0.3 }), shx, 0.0, shz, { shadow: false });
-  box(0.03, 1.4, 0.03, mat.steel, RIGHT_X - 0.06, 1.4, zb1 - 0.1);
-  const head = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.07, 0.03, 20), mat.steel); head.position.set(RIGHT_X - 0.2, 2.12, zb1 - 0.25); head.rotation.x = 0.4; scene.add(head);
-  box(0.3, 0.02, 0.02, mat.steel, RIGHT_X - 0.13, 2.12, zb1 - 0.12);
-  box(0.12, 0.08, 0.04, mat.steel, RIGHT_X - 0.07, 1.05, zb1 - 0.25);
-  // Kaca partisi shower
-  const glass = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.9, 0.62), new THREE.MeshStandardMaterial({ color: '#BFE3F2', transparent: true, opacity: 0.25, roughness: 0.05 }));
-  glass.position.set(shx - 0.31, 0.95, shz); scene.add(glass);
-  // Ember & gayung kecil
-  const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.12, 0.3, 18), M('#60A5FA', { roughness: 0.5 })); bucket.position.set(BATH_X + 0.35, 0.15, zb1 - 0.3); bucket.castShadow = true; scene.add(bucket);
+  box(0.44, 0.6, 0.02, mat.mirror, sx, 1.35, zb0 + T / 2 + 0.02, { shadow: false });
+  colliders.push([sx - 0.25, zb0, sx + 0.25, zb0 + 0.45]);
+  // Ember & gayung di dekat kloset
+  const ex = RIGHT_X - 1.25, ez = zb1 - 0.35;
+  const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.13, 0.32, 18), M('#60A5FA', { roughness: 0.5 })); bucket.position.set(ex, 0.16, ez); bucket.castShadow = true; scene.add(bucket);
+  const gayung = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.08, 14), M('#F472B6', { roughness: 0.5 })); gayung.position.set(ex + 0.05, 0.36, ez); scene.add(gayung);
+  box(0.16, 0.02, 0.02, M('#F472B6'), ex + 0.17, 0.37, ez, { shadow: false });
+  colliders.push([ex - 0.18, ez - 0.18, ex + 0.18, ez + 0.18]);
   label('🚿 Kamar mandi dalam', (BATH_X + RIGHT_X) / 2, 2.2, (zb0 + zb1) / 2, 'km', null, r.id);
 }
 function wifiRouter(r) {
@@ -589,7 +597,7 @@ ROOMS.forEach((r) => { bed(r); ac(r); wardrobe(r); desk(r); lamp(r); bathroom(r)
 
 /* ════════════════ LORONG, TERAS, BELAKANG ════════════════ */
 // Lampu downlight lorong
-[3, 6, 9, 11.5].forEach((z) => {
+[3, 5.5, 8, 10].forEach((z) => {
   const d = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.02, 18), new THREE.MeshStandardMaterial({ color: '#fff', emissive: '#FFF5DD', emissiveIntensity: 1.4 }));
   d.position.set(1.3, H - 0.01, z); ceiling.add(d);
 });
@@ -604,7 +612,7 @@ box(0.01, 0.1, 0.12, mat.dark, COR_X - T / 2 - 0.085, 2.25, 1.9, { shadow: false
 });
 box(RIGHT_X, 0.16, 0.2, mat.wood, RIGHT_X / 2, H - 0.08, 0.15);
 // Tangga ke lantai atas (di belakang kiri, seperti di video)
-const steps = 14, sz0 = 12.3, sz1 = 15.9, sw = 1.0;
+const steps = 14, sz0 = 10.8, sz1 = 14.4, sw = 1.0;
 for (let i = 0; i < steps; i++) {
   const hgt = ((i + 1) / steps) * H, dz = (sz1 - sz0) / steps;
   box(sw, hgt, dz, mat.concrete, sw / 2 + 0.02, hgt / 2, sz0 + dz * (i + 0.5));
@@ -620,18 +628,18 @@ function motorbike(x, z, rot) {
   box(0.24, 0.24, 0.12, M('#DC2626', { roughness: 0.4 }), 0, 0.82, 0.58, { parent: g });
   colliders.push([x - 0.35, z - 0.8, x + 0.35, z + 0.8]);
 }
-motorbike(2.2, 13.9, 0.15);
-motorbike(3.4, 14.3, -0.1);
+motorbike(2.2, 12.4, 0.15);
+motorbike(3.4, 12.8, -0.1);
 
 /* ── Label area ── */
 ROOMS.forEach((r) => {
-  r.labelObj = label(r.name, (COR_X + BATH_X) / 2, 2.9, (r.z0 + r.z1) / 2 - 0.3, 'room area', `${r.tag} · ±3,5 × 4,2 m`);
+  r.labelObj = label(r.name, (COR_X + BATH_X) / 2, 2.9, (r.z0 + r.z1) / 2 - 0.3, 'room area', `${r.tag} · 3 × 4 m`);
 });
-label('Lorong', 1.3, 0.4, 7.5, 'area dim');
+label('Lorong', 1.3, 0.4, 6.8, 'area dim');
 label('Teras depan', 1.1, 0.4, 0.25, 'area dim');
-label('Tangga ke atas', 0.6, 3.3, 14.1, 'area dim');
-label('Parkir motor', 3.4, 1.4, 14.4, 'area dim');
-label('Roster', -0.2, 2.8, 4.1, 'area dim');
+label('Tangga ke atas', 0.6, 3.3, 12.6, 'area dim');
+label('Parkir motor', 3.4, 1.4, 12.9, 'area dim');
+label('Roster', -0.2, 2.8, 3.6, 'area dim');
 
 /* ════════════════ NAVIGASI ════════════════ */
 const ui = {
@@ -678,13 +686,13 @@ function showOrbit() {
   exitWalk();
   mode = 'orbit'; setActiveView('orbit'); setActiveRoom(null); hideInfo();
   controls.enabled = true; controls.enableRotate = true;
-  flyTo(new THREE.Vector3(-7.5, 11.5, -6.5), new THREE.Vector3(3.4, 0, 8));
+  flyTo(new THREE.Vector3(-7, 11, -6), new THREE.Vector3(3.3, 0, 7.25));
 }
 function showTop() {
   exitWalk();
   mode = 'top'; setActiveView('top'); setActiveRoom(null); hideInfo();
   controls.enabled = true;
-  flyTo(new THREE.Vector3(3.4, 24, 8.01), new THREE.Vector3(3.4, 0, 8));
+  flyTo(new THREE.Vector3(3.3, 22, 7.26), new THREE.Vector3(3.3, 0, 7.25));
 }
 function setFov(f) { camera.fov = f; camera.updateProjectionMatrix(); }
 function startWalk(pos, yaw, pitch = -0.05) {
@@ -712,15 +720,16 @@ function enterRoom(id) {
   const r = ROOMS.find((x) => x.id === id);
   setActiveView(null); setActiveRoom(id);
   // Berdiri di dalam kamar dekat pintu, menghadap kasur & AC
-  const p = new THREE.Vector3(COR_X + 0.75, EYE, r.z0 + 1.9);
-  startWalk(p, Math.atan2(5.6 - p.x, r.z0 + 0.8 - p.z), -0.12);
+  // Berdiri tepat setelah pintu masuk, menghadap kasur & AC di dinding seberang
+  const p = new THREE.Vector3(COR_X + 0.6, EYE, r.z0 + 0.8);
+  startWalk(p, Math.atan2(6.0 - p.x, r.z0 + 1.05 - p.z), -0.12);
   showInfo(r);
 }
 function enterBath(id) {
   const r = ROOMS.find((x) => x.id === id);
   // Berdiri tepat di dalam pintu kamar mandi, menghadap pojok shower & kloset
-  const p = new THREE.Vector3(BATH_X + 0.2, EYE, r.bath.z0 + 0.62);
-  startWalk(p, Math.atan2(RIGHT_X - 0.5 - p.x, r.bath.z1 - 0.55 - p.z), -0.5);
+  const p = new THREE.Vector3(BATH_X + 0.25, EYE, r.bath.z0 + 0.48);
+  startWalk(p, Math.atan2(RIGHT_X - 0.5 - p.x, r.bath.z1 - 0.45 - p.z), -0.55);
   showInfo(r, true);
 }
 function walkCorridor() {
@@ -733,10 +742,10 @@ function showInfo(r, inBath) {
   infoRoom = r.id;
   ui.infoEyebrow.textContent = inBath ? 'Kamar mandi dalam' : `Kamar ${r.tag.toLowerCase()}`;
   ui.infoTitle.textContent = r.name;
-  ui.infoSize.textContent = inBath ? `${r.name} · ±1,6 × 1,7 m` : 'Ukuran ±3,5 × 4,2 m (perkiraan) · termasuk kamar mandi';
+  ui.infoSize.textContent = inBath ? `${r.name} · 1,5 × 2 m` : 'Ukuran 3 × 4 m · termasuk kamar mandi 1,5 × 2 m';
   const items = inBath
-    ? [['🚽', 'Kloset duduk'], ['🚿', 'Shower dengan partisi kaca'], ['🪞', 'Wastafel & cermin'], ['🪣', 'Ember untuk cadangan air']]
-    : [['🛏️', 'Kasur 120 × 200 + 2 bantal & guling'], ['❄️', 'AC split di atas kasur'], ['🚿', 'Kamar mandi dalam'], ['🗄️', 'Lemari pakaian'], ['💻', 'Meja belajar & kursi'],
+    ? [['🚽', 'Kloset jongkok'], ['🚿', 'Shower'], ['🪞', 'Wastafel & cermin'], ['🪣', 'Ember & gayung']]
+    : [['🛏️', 'Kasur 120 × 200 + 2 bantal & guling'], ['❄️', 'AC split di atas kasur'], ['🚿', 'Kamar mandi dalam'], ['🗄️', 'Lemari pakaian'], ['💻', 'Meja kecil & kursi'],
        r.wifi ? ['📶', 'Router WiFi 150 Mbps di dinding kamar ini'] : ['📶', 'WiFi 150 Mbps (router di Kamar 1)']];
   ui.infoList.innerHTML = items.map(([i, t]) => `<li><span>${i}</span><span>${t}</span></li>`).join('');
   ui.infoActions.innerHTML = '';
